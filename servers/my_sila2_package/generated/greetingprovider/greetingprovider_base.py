@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from datetime import timedelta
+from queue import Queue
+from typing import TYPE_CHECKING, Optional, Union
 
-from sila2.server import FeatureImplementationBase, MetadataDict
+from sila2.server import FeatureImplementationBase, MetadataDict, ObservableCommandInstance
 
-from .greetingprovider_types import SayHello_Responses
+from .greetingprovider_types import Reset_Responses
 
 if TYPE_CHECKING:
 
@@ -15,6 +17,11 @@ if TYPE_CHECKING:
 
 class GreetingProviderBase(FeatureImplementationBase, ABC):
     parent_server: Server
+
+    _Status_producer_queue: Queue[Union[int, Exception]]
+    _Status_current_value: int
+
+    Reset_default_lifetime_of_execution: Optional[timedelta]
 
     def __init__(self, parent_server: Server):
         """
@@ -25,28 +32,62 @@ class GreetingProviderBase(FeatureImplementationBase, ABC):
         """
         super().__init__(parent_server=parent_server)
 
-    @abstractmethod
-    def get_StartYear(self, *, metadata: MetadataDict) -> int:
+        self._Status_producer_queue = Queue()
+
+        self.Reset_default_lifetime_of_execution = None
+
+    def update_Status(self, Status: int, queue: Optional[Queue[int]] = None) -> None:
         """
-        Returns the year the SiLA Server has been started in.
+        Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting.
+
+        This method updates the observable property 'Status'.
+
+        :param queue: The queue to send updates to. If None, the default Queue will be used.
+        """
+        if queue is None:
+            queue = self._Status_producer_queue
+            self._Status_current_value = Status
+        queue.put(Status)
+
+    def Status_on_subscription(self, *, metadata: MetadataDict) -> Optional[Queue[int]]:
+        """
+        Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting.
+
+        This method is called when a client subscribes to the observable property 'Status'
 
         :param metadata: The SiLA Client Metadata attached to the call
-        :return: Returns the year the SiLA Server has been started in.
+        :return: Optional `Queue` that should be used for updating this property.
+            If None, the default Queue will be used.
         """
+
+    def abort_Status_subscriptions(self, error: Exception, queue: Optional[Queue[int]] = None) -> None:
+        """
+        Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting.
+
+        This method aborts subscriptions to the observable property 'Status'.
+
+        :param error: The Exception to be sent to the subscribing client.
+            If it is no DefinedExecutionError or UndefinedExecutionError, it will be wrapped in an UndefinedExecutionError.
+        :param queue: The queue to abort. If None, the default Queue will be used.
+        """
+        if queue is None:
+            queue = self._Status_producer_queue
+        queue.put(error)
+
+    @property
+    def current_Status(self) -> int:
+        try:
+            return self._Status_current_value
+        except AttributeError:
+            raise AttributeError("Observable property Status has never been set")
 
     @abstractmethod
-    def SayHello(self, Name: str, *, metadata: MetadataDict) -> SayHello_Responses:
+    def Reset(self, *, metadata: MetadataDict, instance: ObservableCommandInstance) -> Reset_Responses:
         """
-        Does what it says: returns "Hello SiLA 2 + [Name]" to the client.
+        Reset the server. Raises an error if the reset fails.
 
-
-        :param Name: The name, SayHello shall use to greet.
 
         :param metadata: The SiLA Client Metadata attached to the call
-
-        :return:
-
-            - Greeting: The greeting string, returned to the SiLA Client.
-
+        :param instance: The command instance, enabling sending status updates to subscribed clients
 
         """

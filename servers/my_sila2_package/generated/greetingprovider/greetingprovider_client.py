@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
     from typing import Iterable, Optional
 
-    from greetingprovider_types import SayHello_Responses
-    from sila2.client import ClientMetadataInstance, ClientUnobservableProperty
+    from greetingprovider_types import Reset_Responses
+    from sila2.client import ClientMetadataInstance, ClientObservableCommandInstance, ClientObservableProperty
 
 
 class GreetingProviderClient:
@@ -24,13 +24,15 @@ class GreetingProviderClient:
 
     """
 
-    StartYear: ClientUnobservableProperty[int]
+    Status: ClientObservableProperty[int]
     """
-    Returns the year the SiLA Server has been started in.
+    Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting.
     """
 
-    def SayHello(self, Name: str, *, metadata: Optional[Iterable[ClientMetadataInstance]] = None) -> SayHello_Responses:
+    def Reset(
+        self, *, metadata: Optional[Iterable[ClientMetadataInstance]] = None
+    ) -> ClientObservableCommandInstance[Reset_Responses]:
         """
-        Does what it says: returns "Hello SiLA 2 + [Name]" to the client.
+        Reset the server. Raises an error if the reset fails.
         """
         ...

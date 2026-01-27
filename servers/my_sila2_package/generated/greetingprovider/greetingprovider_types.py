@@ -4,9 +4,6 @@ from __future__ import annotations
 from typing import NamedTuple
 
 
-class SayHello_Responses(NamedTuple):
+class Reset_Responses(NamedTuple):
 
-    Greeting: str
-    """
-    The greeting string, returned to the SiLA Client.
-    """
+    pass

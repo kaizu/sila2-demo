@@ -11,32 +11,16 @@
     and a StartYear property, informing about the year the Server has been started.
   </Description>
   <Command>
-    <Identifier>SayHello</Identifier>
-    <DisplayName>Say Hello</DisplayName>
-    <Description>Does what it says: returns "Hello SiLA 2 + [Name]" to the client.</Description>
-    <Observable>No</Observable>
-    <Parameter>
-      <Identifier>Name</Identifier>
-      <DisplayName>Name</DisplayName>
-      <Description>The name, SayHello shall use to greet.</Description>
-      <DataType>
-        <Basic>String</Basic>
-      </DataType>
-    </Parameter>
-    <Response>
-      <Identifier>Greeting</Identifier>
-      <DisplayName>Greeting</DisplayName>
-      <Description>The greeting string, returned to the SiLA Client.</Description>
-      <DataType>
-        <Basic>String</Basic>
-      </DataType>
-    </Response>
+    <Identifier>Reset</Identifier>
+    <DisplayName>Reset</DisplayName>
+    <Description>Reset the server. Raises an error if the reset fails.</Description>
+    <Observable>Yes</Observable>
   </Command>
   <Property>
-    <Identifier>StartYear</Identifier>
-    <DisplayName>Start Year</DisplayName>
-    <Description>Returns the year the SiLA Server has been started in.</Description>
-    <Observable>No</Observable>
+    <Identifier>Status</Identifier>
+    <DisplayName>Status</DisplayName>
+    <Description>Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting.</Description>
+    <Observable>Yes</Observable>
     <DataType>
       <Basic>Integer</Basic>
     </DataType>

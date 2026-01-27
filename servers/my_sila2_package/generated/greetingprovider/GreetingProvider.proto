@@ -6,27 +6,29 @@ package sila2.org.silastandard.examples.greetingprovider.v1;
 
 /* Example implementation of a minimum Feature. Provides a Greeting to the Client and a StartYear property, informing about the year the Server has been started. */
 service GreetingProvider {
-  /* Does what it says: returns "Hello SiLA 2 + [Name]" to the client. */
-  rpc SayHello (sila2.org.silastandard.examples.greetingprovider.v1.SayHello_Parameters) returns (sila2.org.silastandard.examples.greetingprovider.v1.SayHello_Responses) {}
-  /* Returns the year the SiLA Server has been started in. */
-  rpc Get_StartYear (sila2.org.silastandard.examples.greetingprovider.v1.Get_StartYear_Parameters) returns (sila2.org.silastandard.examples.greetingprovider.v1.Get_StartYear_Responses) {}
+  /* Reset the server. Raises an error if the reset fails. */
+  rpc Reset (sila2.org.silastandard.examples.greetingprovider.v1.Reset_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of Reset */
+  rpc Reset_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of Reset */
+  rpc Reset_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.silastandard.examples.greetingprovider.v1.Reset_Responses) {}
+  /* Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting. */
+  rpc Subscribe_Status (sila2.org.silastandard.examples.greetingprovider.v1.Subscribe_Status_Parameters) returns (stream sila2.org.silastandard.examples.greetingprovider.v1.Subscribe_Status_Responses) {}
 }
 
-/* Parameters for SayHello */
-message SayHello_Parameters {
-  sila2.org.silastandard.String Name = 1;  /* The name, SayHello shall use to greet. */
+/* Parameters for Reset */
+message Reset_Parameters {
 }
 
-/* Responses of SayHello */
-message SayHello_Responses {
-  sila2.org.silastandard.String Greeting = 1;  /* The greeting string, returned to the SiLA Client. */
+/* Responses of Reset */
+message Reset_Responses {
 }
 
-/* Parameters for StartYear */
-message Get_StartYear_Parameters {
+/* Parameters for Status */
+message Subscribe_Status_Parameters {
 }
 
-/* Responses of StartYear */
-message Get_StartYear_Responses {
-  sila2.org.silastandard.Integer StartYear = 1;  /* Returns the year the SiLA Server has been started in. */
+/* Responses of Status */
+message Subscribe_Status_Responses {
+  sila2.org.silastandard.Integer Status = 1;  /* Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting. */
 }

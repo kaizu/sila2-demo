@@ -2,11 +2,11 @@
 from .greetingprovider_base import GreetingProviderBase
 from .greetingprovider_client import GreetingProviderClient
 from .greetingprovider_feature import GreetingProviderFeature
-from .greetingprovider_types import SayHello_Responses
+from .greetingprovider_types import Reset_Responses
 
 __all__ = [
     "GreetingProviderBase",
     "GreetingProviderFeature",
     "GreetingProviderClient",
-    "SayHello_Responses",
+    "Reset_Responses",
 ]
