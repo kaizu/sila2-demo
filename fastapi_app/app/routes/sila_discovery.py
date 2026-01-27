@@ -18,12 +18,23 @@ def _discover(timeout: float, insecure: bool) -> List[dict[str, Any]]:
 
             time.sleep(timeout)
         for client in browser.clients:
+            status_value = -1
+            try:
+                station_feature = getattr(client, "StationProvider", None)
+                if station_feature is not None:
+                    status_prop = getattr(station_feature, "Status", None)
+                    if status_prop is not None:
+                        status_value = int(status_prop.get())
+            except Exception:
+                status_value = -1
+
             results.append(
                 {
                     "name": client.SiLAService.ServerName.get(),
                     "uuid": client.SiLAService.ServerUUID.get(),
                     "type": client.SiLAService.ServerType.get(),
                     "address": {"ip": client.address, "port": client.port},
+                    "status": status_value,
                 }
             )
     return results
