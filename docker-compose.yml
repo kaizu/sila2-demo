@@ -1,7 +1,7 @@
 services:
   sila2-server:
     build:
-      context: .
+      context: ./servers
       dockerfile: Dockerfile
     ports:
       - "50052:50052"
