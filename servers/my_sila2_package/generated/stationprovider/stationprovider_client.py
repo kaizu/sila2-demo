@@ -12,15 +12,15 @@ if TYPE_CHECKING:
 
     from typing import Iterable, Optional
 
-    from greetingprovider_types import Reset_Responses
+    from stationprovider_types import Reset_Responses
     from sila2.client import ClientMetadataInstance, ClientObservableCommandInstance, ClientObservableProperty
 
 
-class GreetingProviderClient:
+class StationProviderClient:
     """
 
-    Example implementation of a minimum Feature. Provides a Greeting to the Client
-    and a StartYear property, informing about the year the Server has been started.
+    Provides station-level control for a single lab station (one experimental device managed by the SiLA2 server).
+    Exposes the station status and allows resetting the station.
 
     """
 

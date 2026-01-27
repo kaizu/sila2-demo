@@ -6,8 +6,8 @@ from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
 
-from .feature_implementations.greetingprovider_impl import GreetingProviderImpl
-from .generated.greetingprovider import GreetingProviderFeature
+from .feature_implementations.stationprovider_impl import StationProviderImpl
+from .generated.stationprovider import StationProviderFeature
 
 
 class Server(SilaServer):
@@ -34,5 +34,5 @@ class Server(SilaServer):
             server_uuid=server_uuid if server_uuid is not None else uuid4(),
         )
 
-        self.greetingprovider = GreetingProviderImpl(self)
-        self.set_feature_implementation(GreetingProviderFeature, self.greetingprovider)
+        self.stationprovider = StationProviderImpl(self)
+        self.set_feature_implementation(StationProviderFeature, self.stationprovider)

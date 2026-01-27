@@ -2,17 +2,18 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from queue import Queue
 from typing import Optional, TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
-from ..generated.greetingprovider import GreetingProviderBase, Reset_Responses
+from ..generated.stationprovider import Reset_Responses, StationProviderBase
 
 if TYPE_CHECKING:
     from ..server import Server
 
 
-class GreetingProviderImpl(GreetingProviderBase):
+class StationProviderImpl(StationProviderBase):
     def __init__(self, parent_server: Server) -> None:
         super().__init__(parent_server=parent_server)
 

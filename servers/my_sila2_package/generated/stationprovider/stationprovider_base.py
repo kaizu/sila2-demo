@@ -8,14 +8,14 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from sila2.server import FeatureImplementationBase, MetadataDict, ObservableCommandInstance
 
-from .greetingprovider_types import Reset_Responses
+from .stationprovider_types import Reset_Responses
 
 if TYPE_CHECKING:
 
     from ...server import Server
 
 
-class GreetingProviderBase(FeatureImplementationBase, ABC):
+class StationProviderBase(FeatureImplementationBase, ABC):
     parent_server: Server
 
     _Status_producer_queue: Queue[Union[int, Exception]]
@@ -26,8 +26,8 @@ class GreetingProviderBase(FeatureImplementationBase, ABC):
     def __init__(self, parent_server: Server):
         """
 
-        Example implementation of a minimum Feature. Provides a Greeting to the Client
-        and a StartYear property, informing about the year the Server has been started.
+        Provides station-level control for a single lab station (one experimental device managed by the SiLA2 server).
+        Exposes the station status and allows resetting the station.
 
         """
         super().__init__(parent_server=parent_server)
