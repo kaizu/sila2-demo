@@ -7,7 +7,7 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir --upgrade pip
 COPY pyproject.toml ./pyproject.toml
-RUN pip install --no-cache-dir fastapi uvicorn[standard]
+RUN pip install --no-cache-dir fastapi uvicorn[standard] sila2
 
 COPY app ./app
 
