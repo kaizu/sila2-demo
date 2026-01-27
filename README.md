@@ -7,12 +7,18 @@ Build and start the server:
 docker compose up --build
 ```
 
-The server listens on `0.0.0.0:50052` by default. To change the port, edit `docker-compose.yml` (`ports` mapping and `--port` argument).
+Services:
+- SiLA2 server: `0.0.0.0:50052` by default. To change the port, edit `docker-compose.yml` (`ports` mapping and `--port` argument).
+- FastAPI: `0.0.0.0:8000`.
 
 Stop the server:
 ```bash
 docker compose down
 ```
+
+### Check FastAPI is running
+- Health: `curl http://localhost:8000/health`
+- Root: `curl http://localhost:8000/`
 
 ## Discover reachable SiLA2 servers
 
