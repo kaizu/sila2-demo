@@ -20,13 +20,14 @@ docker compose down
 - Health: `curl http://localhost:8000/health`
 - Root: `curl http://localhost:8000/`
 
-## Discover reachable SiLA2 servers
+## FastAPI endpoints
 
-Use the helper script to list servers via SiLA discovery:
-```bash
-python list_sila_servers.py --timeout 5 --insecure
-```
-- `--timeout <seconds>` controls how long to listen before printing (0 = immediate).
-- Use `--insecure` if servers are started with `--insecure` (as in the default compose setup).
+- Discover SiLA2 servers (default timeout 5s):  
+  `curl "http://localhost:8000/sila/discover"`
+  - Customize: `curl "http://localhost:8000/sila/discover?timeout=3&insecure=true"`
 
-The script prints each discovered server’s name, type, UUID, and address:port, or “No SiLA2 servers found.” if none are discovered. Ensure your servers are running with discovery enabled (do not use `--disable-discovery`).
+- Trigger Reset on a specific SiLA2 server by name or UUID (returns immediately after invoking):  
+  `curl -X POST "http://localhost:8000/sila/reset?server_name=MySila2Server-1"`  
+  or  
+  `curl -X POST "http://localhost:8000/sila/reset?server_uuid=<UUID>"`  
+  - Optional: `timeout` (seconds), `insecure=true|false`
