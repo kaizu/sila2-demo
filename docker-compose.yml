@@ -1,15 +1,47 @@
+x-sila2-server: &sila2-server
+  build:
+    context: ./servers
+    dockerfile: Dockerfile
+  environment:
+    - PYTHONUNBUFFERED=1
+    - SILA_SERVER_TYPE=StationServer
+  command: ["python", "-m", "my_sila2_package", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
+
 services:
-  sila2-server:
-    build:
-      context: ./servers
-      dockerfile: Dockerfile
+  sila2-server-1:
+    <<: *sila2-server
     ports:
       - "50052:50052"
     environment:
-      - PYTHONUNBUFFERED=1
-      - SILA_SERVER_NAME=MySila2Server
-      - SILA_SERVER_TYPE=StationServer
-    command: ["python", "-m", "my_sila2_package", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
+      - SILA_SERVER_NAME=Agilent-Microplate-Centrifuge
+
+  sila2-server-2:
+    <<: *sila2-server
+    ports:
+      - "50053:50052"
+    environment:
+      - SILA_SERVER_NAME=Agilent-PlateLoc
+
+  sila2-server-3:
+    <<: *sila2-server
+    ports:
+      - "50054:50052"
+    environment:
+      - SILA_SERVER_NAME=Azenta-Automated-Plate-Seal-Remover
+
+  sila2-server-4:
+    <<: *sila2-server
+    ports:
+      - "50055:50052"
+    environment:
+      - SILA_SERVER_NAME=ThermoFisher-Thermal-Cycler
+
+  sila2-server-5:
+    <<: *sila2-server
+    ports:
+      - "50056:50052"
+    environment:
+      - SILA_SERVER_NAME=Tecan-Fluent
 
   fastapi:
     build:
