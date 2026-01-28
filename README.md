@@ -4,7 +4,7 @@ Prerequisites: Docker and Docker Compose.
 
 Build and start the server:
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 Services:
@@ -16,18 +16,17 @@ Stop the server:
 docker compose down
 ```
 
-### Check FastAPI is running
+## FastAPI endpoints
+
 - Health: `curl http://localhost:8000/health`
 - Root: `curl http://localhost:8000/`
-
-## FastAPI endpoints
 
 - Discover SiLA2 servers (default timeout 5s):  
   `curl "http://localhost:8000/sila/discover"`
   - Customize: `curl "http://localhost:8000/sila/discover?timeout=3&insecure=true"`
 
 - Trigger Reset on a specific SiLA2 server by name or UUID (returns immediately after invoking):  
-  `curl -X POST "http://localhost:8000/sila/reset?server_name=MySila2Server-1"`  
+  `curl -X POST "http://localhost:8000/sila/reset?server_name=Agilent-Microplate-Centrifuge"`  
   or  
   `curl -X POST "http://localhost:8000/sila/reset?server_uuid=<UUID>"`  
   - Optional: `timeout` (seconds), `insecure=true|false`
