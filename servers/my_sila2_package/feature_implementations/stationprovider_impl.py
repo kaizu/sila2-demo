@@ -22,9 +22,10 @@ class StationProviderImpl(StationProviderBase):
         # datetime.timedelta: Command instance is deleted after this duration, can be increased during command runtime
         self.Reset_default_lifetime_of_execution = timedelta(minutes=30)
 
-        # Initialize status as Starting (4), then transition to Idle (1).
+        # Initialize status as Starting -> Idle -> Error for testing flows.
         self.update_Status(4)
         self.update_Status(1)
+        self.update_Status(3)
 
     def Status_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
         # Send the latest status immediately to the subscriber.
@@ -40,9 +41,7 @@ class StationProviderImpl(StationProviderBase):
         # set execution status from `waiting` to `running`
         instance.begin_execution()
 
-        # Move through Starting -> Idle to simulate a reset cycle.
-        self.update_Status(4)
-        # Complete reset immediately; adjust to real reset logic as needed.
+        # Reset brings the station back to Idle.
         self.update_Status(1)
 
         instance.complete()
