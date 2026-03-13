@@ -25,8 +25,6 @@ docker compose down
   `curl "http://localhost:8000/sila/discover"`
   - Customize: `curl "http://localhost:8000/sila/discover?timeout=3&insecure=true"`
 
-- Trigger Reset on a specific SiLA2 server by name or UUID (returns immediately after invoking):  
-  `curl -X POST "http://localhost:8000/sila/reset?server_name=Agilent-Microplate-Centrifuge"`  
-  or  
-  `curl -X POST "http://localhost:8000/sila/reset?server_uuid=<UUID>"`  
-  - Optional: `timeout` (seconds), `insecure=true|false`
+- Trigger Reset on a specific SiLA2 server by IP and port (returns immediately after invoking):  
+  `curl -X POST "http://localhost:8000/sila/reset?ip=127.0.0.1&port=50052"`  
+  - Optional: `insecure=true|false`

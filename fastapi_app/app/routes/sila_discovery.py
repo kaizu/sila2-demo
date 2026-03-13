@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from sila2.client import SilaClient
 from sila2.discovery import SilaDiscoveryBrowser
 
 router = APIRouter()
@@ -43,7 +45,7 @@ def _discover(timeout: float, insecure: bool) -> List[dict[str, Any]]:
 @router.get("/discover")
 async def discover(
     timeout: Optional[float] = Query(5.0, ge=0.0, description="Seconds to listen for servers (0 = immediate)"),
-    insecure: bool = Query(True, description="Use insecure discovery (match servers started with --insecure)"),
+    insecure: bool = Query(True, description="Use insecure gRPC connection (match servers started with --insecure)"),
 ):
     """
     Discover reachable SiLA2 servers and return basic info as JSON.
@@ -55,70 +57,74 @@ async def discover(
     return {"servers": data, "count": len(data)}
 
 
-def _find_matching_client(
-    server_name: Optional[str], server_uuid: Optional[str], timeout: float, insecure: bool
-):
-    if server_name is None and server_uuid is None:
-        raise ValueError("Either server_name or server_uuid must be provided")
-    start = None
-    if timeout > 0:
-        import time
+# Kept for possible future reuse with discovery-based reset by name/UUID.
+# def _find_matching_client(
+#     server_name: Optional[str], server_uuid: Optional[str], timeout: float, insecure: bool
+# ):
+#     if server_name is None and server_uuid is None:
+#         raise ValueError("Either server_name or server_uuid must be provided")
+#     start = None
+#     if timeout > 0:
+#         import time
+#
+#         start = time.time()
+#
+#     with SilaDiscoveryBrowser(insecure=insecure) as browser:
+#         while True:
+#             for client in browser.clients:
+#                 if server_name is not None and client.SiLAService.ServerName.get() != server_name:
+#                     continue
+#                 if server_uuid is not None and client.SiLAService.ServerUUID.get() != server_uuid:
+#                     continue
+#                 return client
+#
+#             if timeout == 0:
+#                 break
+#             import time
+#
+#             time.sleep(0.1)
+#             if start is not None and (time.time() - start) >= timeout:
+#                 break
+#
+#     raise TimeoutError("No matching SiLA2 server found")
+#
+#
+def _reset(ip: str, port: int, insecure: bool) -> dict[str, Any]:
+    with SilaClient(ip, port, insecure=insecure) as client:
+        feature = getattr(client, "StationProvider", None)
+        if feature is None:
+            raise RuntimeError("StationProvider feature not available on target server")
 
-        start = time.time()
+        # Fire the Reset command without waiting for completion
+        feature.Reset()
 
-    with SilaDiscoveryBrowser(insecure=insecure) as browser:
-        while True:
-            for client in browser.clients:
-                if server_name is not None and client.SiLAService.ServerName.get() != server_name:
-                    continue
-                if server_uuid is not None and client.SiLAService.ServerUUID.get() != server_uuid:
-                    continue
-                return client
-
-            if timeout == 0:
-                break
-            import time
-
-            time.sleep(0.1)
-            if start is not None and (time.time() - start) >= timeout:
-                break
-
-    raise TimeoutError("No matching SiLA2 server found")
-
-
-def _reset(server_name: Optional[str], server_uuid: Optional[str], timeout: float, insecure: bool) -> dict[str, Any]:
-    client = _find_matching_client(server_name, server_uuid, timeout, insecure)
-    feature = getattr(client, "StationProvider", None)
-    if feature is None:
-        raise RuntimeError("StationProvider feature not available on target server")
-
-    # Fire the Reset command without waiting for completion
-    feature.Reset()
-
-    return {
-        "name": client.SiLAService.ServerName.get(),
-        "uuid": client.SiLAService.ServerUUID.get(),
-        "type": client.SiLAService.ServerType.get(),
-    }
+        return {
+            "name": client.SiLAService.ServerName.get(),
+            "uuid": client.SiLAService.ServerUUID.get(),
+            "type": client.SiLAService.ServerType.get(),
+            "address": {"ip": ip, "port": port},
+        }
 
 
 @router.post("/reset")
 async def reset(
-    server_name: Optional[str] = Query(None, description="SiLA Server name to reset"),
-    server_uuid: Optional[str] = Query(None, description="SiLA Server UUID to reset"),
-    timeout: Optional[float] = Query(5.0, ge=0.0, description="Seconds to wait for a matching server"),
+    ip: str = Query(..., description="SiLA Server IPv4/IPv6 address"),
+    port: int = Query(..., ge=1, le=65535, description="SiLA Server port"),
     insecure: bool = Query(True, description="Use insecure discovery (match servers started with --insecure)"),
 ):
     """
-    Trigger the StationProvider Reset command on a matching SiLA2 server.
+    Trigger the StationProvider Reset command on a SiLA2 server specified by IP and port.
     Returns immediately after invoking the command (does not wait for completion).
     """
     try:
-        target = await asyncio.to_thread(_reset, server_name, server_uuid, timeout or 0.0, insecure)
+        normalized_ip = str(ipaddress.ip_address(ip))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid IP address: {ip}") from exc
+
+    try:
+        target = await asyncio.to_thread(_reset, normalized_ip, port, insecure)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except TimeoutError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception as exc:  # pragma: no cover - defensive
         raise HTTPException(status_code=503, detail=f"Reset failed: {exc}") from exc
 
