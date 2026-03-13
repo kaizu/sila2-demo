@@ -11,6 +11,10 @@ from sila2.discovery import SilaDiscoveryBrowser
 router = APIRouter()
 
 
+def _normalize_ip(ip: str) -> str:
+    return str(ipaddress.ip_address(ip))
+
+
 def _get_control_feature(client: Any):
     # Support both legacy StationProvider and renamed TrolleyArmProvider.
     for feature_name in ("StationProvider", "TrolleyArmProvider"):
@@ -18,6 +22,13 @@ def _get_control_feature(client: Any):
         if feature is not None:
             return feature
     return None
+
+
+def _get_trolley_feature(client: Any):
+    feature = getattr(client, "TrolleyArmProvider", None)
+    if feature is None:
+        raise RuntimeError("TrolleyArmProvider feature not available on target server")
+    return feature
 
 
 def _discover(timeout: float, insecure: bool) -> List[dict[str, Any]]:
@@ -115,6 +126,33 @@ def _reset(ip: str, port: int, insecure: bool) -> dict[str, Any]:
         }
 
 
+def _get_trolley_position(ip: str, port: int, insecure: bool) -> dict[str, Any]:
+    with SilaClient(ip, port, insecure=insecure) as client:
+        feature = _get_trolley_feature(client)
+        position = int(feature.TrolleyPosition.get())
+        return {
+            "name": client.SiLAService.ServerName.get(),
+            "uuid": client.SiLAService.ServerUUID.get(),
+            "type": client.SiLAService.ServerType.get(),
+            "address": {"ip": ip, "port": port},
+            "position": position,
+        }
+
+
+def _set_trolley_position(ip: str, port: int, position: int, insecure: bool) -> dict[str, Any]:
+    with SilaClient(ip, port, insecure=insecure) as client:
+        feature = _get_trolley_feature(client)
+        feature.SetTrolleyPosition(Position=position)
+        current_position = int(feature.TrolleyPosition.get())
+        return {
+            "name": client.SiLAService.ServerName.get(),
+            "uuid": client.SiLAService.ServerUUID.get(),
+            "type": client.SiLAService.ServerType.get(),
+            "address": {"ip": ip, "port": port},
+            "position": current_position,
+        }
+
+
 @router.post("/reset")
 async def reset(
     ip: str = Query(..., description="SiLA Server IPv4/IPv6 address"),
@@ -126,7 +164,7 @@ async def reset(
     Returns immediately after invoking the command (does not wait for completion).
     """
     try:
-        normalized_ip = str(ipaddress.ip_address(ip))
+        normalized_ip = _normalize_ip(ip)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=f"Invalid IP address: {ip}") from exc
 
@@ -138,3 +176,52 @@ async def reset(
         raise HTTPException(status_code=503, detail=f"Reset failed: {exc}") from exc
 
     return {"server": target}
+
+
+@router.get("/trolley-position")
+async def get_trolley_position(
+    ip: str = Query(..., description="SiLA Server IPv4/IPv6 address"),
+    port: int = Query(..., ge=1, le=65535, description="SiLA Server port"),
+    insecure: bool = Query(True, description="Use insecure gRPC connection (match servers started with --insecure)"),
+):
+    """
+    Read the current trolley position from a trolley-arm server specified by IP and port.
+    """
+    try:
+        normalized_ip = _normalize_ip(ip)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid IP address: {ip}") from exc
+
+    try:
+        result = await asyncio.to_thread(_get_trolley_position, normalized_ip, port, insecure)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=503, detail=f"Get trolley position failed: {exc}") from exc
+
+    return {"server": result}
+
+
+@router.post("/trolley-position")
+async def set_trolley_position(
+    ip: str = Query(..., description="SiLA Server IPv4/IPv6 address"),
+    port: int = Query(..., ge=1, le=65535, description="SiLA Server port"),
+    position: int = Query(..., ge=0, description="Target trolley position (natural number, >= 0)"),
+    insecure: bool = Query(True, description="Use insecure gRPC connection (match servers started with --insecure)"),
+):
+    """
+    Set the trolley position on a trolley-arm server specified by IP and port.
+    """
+    try:
+        normalized_ip = _normalize_ip(ip)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid IP address: {ip}") from exc
+
+    try:
+        result = await asyncio.to_thread(_set_trolley_position, normalized_ip, port, position, insecure)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=503, detail=f"Set trolley position failed: {exc}") from exc
+
+    return {"server": result}

@@ -35,3 +35,11 @@ docker compose down
 - Trigger Reset on a specific SiLA2 server by IP and port (returns immediately after invoking):  
   `curl -X POST "http://localhost:8000/sila/reset?ip=127.0.0.1&port=50052"`  
   - Optional: `insecure=true|false`
+
+- Get trolley position from trolley-arm server by IP and port:  
+  `curl "http://localhost:8000/sila/trolley-position?ip=127.0.0.1&port=50057"`
+  - Optional: `insecure=true|false`
+
+- Set trolley position on trolley-arm server by IP and port:  
+  `curl -X POST "http://localhost:8000/sila/trolley-position?ip=127.0.0.1&port=50057&position=3"`
+  - Optional: `insecure=true|false`
