@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Verified" Originator="org.silastandard"
+         Category="examples"
+         xmlns="http://www.sila-standard.org"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>StationProvider</Identifier>
+  <DisplayName>Station Provider</DisplayName>
+  <Description>
+    Provides station-level control for a single lab station (one experimental device managed by the SiLA2 server).
+    Exposes the station status and allows resetting the station.
+  </Description>
+  <Command>
+    <Identifier>Reset</Identifier>
+    <DisplayName>Reset</DisplayName>
+    <Description>Reset the server. Raises an error if the reset fails.</Description>
+    <Observable>Yes</Observable>
+  </Command>
+  <Property>
+    <Identifier>Status</Identifier>
+    <DisplayName>Status</DisplayName>
+    <Description>Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting.</Description>
+    <Observable>Yes</Observable>
+    <DataType>
+      <Basic>Integer</Basic>
+    </DataType>
+  </Property>
+</Feature>

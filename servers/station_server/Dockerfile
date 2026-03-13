@@ -19,4 +19,4 @@ RUN pip install --no-cache-dir .
 EXPOSE 50052
 
 # Start the SiLA2 server without TLS for local use; override in compose if needed
-CMD ["python", "-m", "my_sila2_package", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
+CMD ["python", "-m", "station_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]

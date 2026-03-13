@@ -16,6 +16,13 @@ Stop the server:
 docker compose down
 ```
 
+## Project layout
+
+- `servers/station_server/`: current running server package (used by `docker-compose.yml`)
+- `servers/trolley_arm_server/`: new server package for trolley-arm; currently mirrors `station_server` features
+- `specs/station_server/`: canonical feature definitions for the station server
+- `specs/trolley_arm_server/`: feature definitions for trolley-arm server (currently copied from `station_server`)
+
 ## FastAPI endpoints
 
 - Health: `curl http://localhost:8000/health`

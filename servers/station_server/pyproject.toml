@@ -1,5 +1,5 @@
 [project]
-name = "my_sila2_package"
+name = "station-server"
 version = "0.0.0"
 requires-python = ">=3.10"
 dependencies = [
@@ -12,10 +12,10 @@ requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["my_sila2_package*"]
+include = ["station_server*"]
 
 [tool.setuptools.package-data]
-"my_sila2_package.generated" = [
+"station_server.generated" = [
     "*/*.sila.xml",
     "*/*.proto",
 ]
