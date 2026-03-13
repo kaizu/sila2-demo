@@ -21,10 +21,10 @@ class Server(SilaServer):
         env_type = os.getenv("SILA_SERVER_TYPE")
 
         if name is None:
-            name = env_name if env_name else "ExampleServer"
+            name = env_name if env_name else "StationServer"
         if description is None:
             description = "An example SiLA2 server"
-        server_type = env_type if env_type else "ExampleServer"
+        server_type = env_type if env_type else "StationServer"
         super().__init__(
             server_name=name,
             server_description=description,
