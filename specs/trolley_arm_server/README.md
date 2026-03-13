@@ -3,7 +3,7 @@
 Feature definition files for the trolley arm server.
 
 Current state:
-- `StationProvider-v1_0.sila.xml` is copied from `station_server` so both servers share the same base features.
+- `TrolleyArmProvider-v1_0.sila.xml` started from the station feature and is now maintained independently.
 
 Next step:
 - Add trolley-arm-specific feature definition files here and regenerate code for `servers/trolley_arm_server`.

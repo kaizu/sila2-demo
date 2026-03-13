@@ -6,16 +6,16 @@ from typing import Set
 from sila2.client import SilaClient
 from sila2.framework import FullyQualifiedFeatureIdentifier
 
-from . import stationprovider
+from . import trolleyarmprovider
 
 
 class Client(SilaClient):
 
-    StationProvider: stationprovider.StationProviderClient
+    TrolleyArmProvider: trolleyarmprovider.TrolleyArmProviderClient
 
     _expected_features: Set[FullyQualifiedFeatureIdentifier] = {
         FullyQualifiedFeatureIdentifier("org.silastandard/core/SiLAService/v1"),
-        FullyQualifiedFeatureIdentifier("org.silastandard/examples/StationProvider/v1"),
+        FullyQualifiedFeatureIdentifier("org.silastandard/examples/TrolleyArmProvider/v1"),
     }
 
     def __init__(self, *args, **kwargs):

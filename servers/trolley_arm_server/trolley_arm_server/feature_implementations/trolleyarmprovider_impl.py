@@ -7,13 +7,13 @@ from typing import Optional, TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
-from ..generated.stationprovider import Reset_Responses, StationProviderBase
+from ..generated.trolleyarmprovider import Reset_Responses, SetTrolleyPosition_Responses, TrolleyArmProviderBase
 
 if TYPE_CHECKING:
     from ..server import Server
 
 
-class StationProviderImpl(StationProviderBase):
+class TrolleyArmProviderImpl(TrolleyArmProviderBase):
     def __init__(self, parent_server: Server) -> None:
         super().__init__(parent_server=parent_server)
 
@@ -26,6 +26,9 @@ class StationProviderImpl(StationProviderBase):
         self.update_Status(4)
         self.update_Status(1)
         self.update_Status(3)
+
+        # Trolley starts at rail position 0.
+        self.update_TrolleyPosition(0)
 
     def Status_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
         # Send the latest status immediately to the subscriber.
@@ -46,3 +49,19 @@ class StationProviderImpl(StationProviderBase):
 
         instance.complete()
         return Reset_Responses()
+
+    def TrolleyPosition_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
+        # Send the latest trolley position immediately to the subscriber.
+        queue = super().TrolleyPosition_on_subscription(metadata=metadata)
+        try:
+            self.update_TrolleyPosition(self.current_TrolleyPosition, queue=queue)
+        except AttributeError:
+            self.update_TrolleyPosition(0, queue=queue)
+        return queue
+
+    def SetTrolleyPosition(self, Position: int, *, metadata: MetadataDict) -> SetTrolleyPosition_Responses:
+        if Position < 0:
+            raise ValueError("Position must be a natural number (>= 0)")
+
+        self.update_TrolleyPosition(Position)
+        return SetTrolleyPosition_Responses()

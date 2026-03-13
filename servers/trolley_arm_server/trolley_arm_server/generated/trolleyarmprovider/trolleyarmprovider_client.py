@@ -12,11 +12,11 @@ if TYPE_CHECKING:
 
     from typing import Iterable, Optional
 
-    from stationprovider_types import Reset_Responses
+    from trolleyarmprovider_types import Reset_Responses, SetTrolleyPosition_Responses
     from sila2.client import ClientMetadataInstance, ClientObservableCommandInstance, ClientObservableProperty
 
 
-class StationProviderClient:
+class TrolleyArmProviderClient:
     """
 
     Provides station-level control for a single lab station (one experimental device managed by the SiLA2 server).
@@ -28,6 +28,19 @@ class StationProviderClient:
     """
     Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting.
     """
+
+    TrolleyPosition: ClientObservableProperty[int]
+    """
+    Current trolley position on the rail. Natural number (0 or greater).
+    """
+
+    def SetTrolleyPosition(
+        self, Position: int, *, metadata: Optional[Iterable[ClientMetadataInstance]] = None
+    ) -> SetTrolleyPosition_Responses:
+        """
+        Set trolley position on the rail as a natural number (0 or greater).
+        """
+        ...
 
     def Reset(
         self, *, metadata: Optional[Iterable[ClientMetadataInstance]] = None

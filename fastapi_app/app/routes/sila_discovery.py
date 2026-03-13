@@ -11,6 +11,15 @@ from sila2.discovery import SilaDiscoveryBrowser
 router = APIRouter()
 
 
+def _get_control_feature(client: Any):
+    # Support both legacy StationProvider and renamed TrolleyArmProvider.
+    for feature_name in ("StationProvider", "TrolleyArmProvider"):
+        feature = getattr(client, feature_name, None)
+        if feature is not None:
+            return feature
+    return None
+
+
 def _discover(timeout: float, insecure: bool) -> List[dict[str, Any]]:
     results: List[dict[str, Any]] = []
     with SilaDiscoveryBrowser(insecure=insecure) as browser:
@@ -22,9 +31,9 @@ def _discover(timeout: float, insecure: bool) -> List[dict[str, Any]]:
         for client in browser.clients:
             status_value = -1
             try:
-                station_feature = getattr(client, "StationProvider", None)
-                if station_feature is not None:
-                    status_prop = getattr(station_feature, "Status", None)
+                control_feature = _get_control_feature(client)
+                if control_feature is not None:
+                    status_prop = getattr(control_feature, "Status", None)
                     if status_prop is not None:
                         status_value = int(status_prop.get())
             except Exception:
@@ -91,9 +100,9 @@ async def discover(
 #
 def _reset(ip: str, port: int, insecure: bool) -> dict[str, Any]:
     with SilaClient(ip, port, insecure=insecure) as client:
-        feature = getattr(client, "StationProvider", None)
+        feature = _get_control_feature(client)
         if feature is None:
-            raise RuntimeError("StationProvider feature not available on target server")
+            raise RuntimeError("No supported control feature found on target server")
 
         # Fire the Reset command without waiting for completion
         feature.Reset()
@@ -113,7 +122,7 @@ async def reset(
     insecure: bool = Query(True, description="Use insecure discovery (match servers started with --insecure)"),
 ):
     """
-    Trigger the StationProvider Reset command on a SiLA2 server specified by IP and port.
+    Trigger the reset command on a SiLA2 server specified by IP and port.
     Returns immediately after invoking the command (does not wait for completion).
     """
     try:

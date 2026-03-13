@@ -8,18 +8,20 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from sila2.server import FeatureImplementationBase, MetadataDict, ObservableCommandInstance
 
-from .stationprovider_types import Reset_Responses
+from .trolleyarmprovider_types import Reset_Responses, SetTrolleyPosition_Responses
 
 if TYPE_CHECKING:
 
     from ...server import Server
 
 
-class StationProviderBase(FeatureImplementationBase, ABC):
+class TrolleyArmProviderBase(FeatureImplementationBase, ABC):
     parent_server: Server
 
     _Status_producer_queue: Queue[Union[int, Exception]]
     _Status_current_value: int
+    _TrolleyPosition_producer_queue: Queue[Union[int, Exception]]
+    _TrolleyPosition_current_value: int
 
     Reset_default_lifetime_of_execution: Optional[timedelta]
 
@@ -33,6 +35,7 @@ class StationProviderBase(FeatureImplementationBase, ABC):
         super().__init__(parent_server=parent_server)
 
         self._Status_producer_queue = Queue()
+        self._TrolleyPosition_producer_queue = Queue()
 
         self.Reset_default_lifetime_of_execution = None
 
@@ -80,6 +83,63 @@ class StationProviderBase(FeatureImplementationBase, ABC):
             return self._Status_current_value
         except AttributeError:
             raise AttributeError("Observable property Status has never been set")
+
+    def update_TrolleyPosition(self, TrolleyPosition: int, queue: Optional[Queue[int]] = None) -> None:
+        """
+        Current trolley position on the rail. Natural number (0 or greater).
+
+        This method updates the observable property 'TrolleyPosition'.
+
+        :param queue: The queue to send updates to. If None, the default Queue will be used.
+        """
+        if queue is None:
+            queue = self._TrolleyPosition_producer_queue
+            self._TrolleyPosition_current_value = TrolleyPosition
+        queue.put(TrolleyPosition)
+
+    def TrolleyPosition_on_subscription(self, *, metadata: MetadataDict) -> Optional[Queue[int]]:
+        """
+        Current trolley position on the rail. Natural number (0 or greater).
+
+        This method is called when a client subscribes to the observable property 'TrolleyPosition'
+
+        :param metadata: The SiLA Client Metadata attached to the call
+        :return: Optional `Queue` that should be used for updating this property.
+            If None, the default Queue will be used.
+        """
+
+    def abort_TrolleyPosition_subscriptions(self, error: Exception, queue: Optional[Queue[int]] = None) -> None:
+        """
+        Current trolley position on the rail. Natural number (0 or greater).
+
+        This method aborts subscriptions to the observable property 'TrolleyPosition'.
+
+        :param error: The Exception to be sent to the subscribing client.
+            If it is no DefinedExecutionError or UndefinedExecutionError, it will be wrapped in an UndefinedExecutionError.
+        :param queue: The queue to abort. If None, the default Queue will be used.
+        """
+        if queue is None:
+            queue = self._TrolleyPosition_producer_queue
+        queue.put(error)
+
+    @property
+    def current_TrolleyPosition(self) -> int:
+        try:
+            return self._TrolleyPosition_current_value
+        except AttributeError:
+            raise AttributeError("Observable property TrolleyPosition has never been set")
+
+    @abstractmethod
+    def SetTrolleyPosition(self, Position: int, *, metadata: MetadataDict) -> SetTrolleyPosition_Responses:
+        """
+        Set trolley position on the rail as a natural number (0 or greater).
+
+
+        :param Position: Trolley position on the rail. Must be 0 or greater.
+
+        :param metadata: The SiLA Client Metadata attached to the call
+
+        """
 
     @abstractmethod
     def Reset(self, *, metadata: MetadataDict, instance: ObservableCommandInstance) -> Reset_Responses:

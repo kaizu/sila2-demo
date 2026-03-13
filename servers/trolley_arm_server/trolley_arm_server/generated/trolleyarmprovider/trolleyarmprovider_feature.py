@@ -3,4 +3,4 @@ from os.path import dirname, join
 
 from sila2.framework import Feature
 
-StationProviderFeature = Feature(join(dirname(__file__), "StationProvider.sila.xml"))
+TrolleyArmProviderFeature = Feature(join(dirname(__file__), "TrolleyArmProvider.sila.xml"))

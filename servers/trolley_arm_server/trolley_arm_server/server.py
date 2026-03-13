@@ -6,8 +6,8 @@ from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
 
-from .feature_implementations.stationprovider_impl import StationProviderImpl
-from .generated.stationprovider import StationProviderFeature
+from .feature_implementations.trolleyarmprovider_impl import TrolleyArmProviderImpl
+from .generated.trolleyarmprovider import TrolleyArmProviderFeature
 
 
 class Server(SilaServer):
@@ -34,5 +34,5 @@ class Server(SilaServer):
             server_uuid=server_uuid if server_uuid is not None else uuid4(),
         )
 
-        self.stationprovider = StationProviderImpl(self)
-        self.set_feature_implementation(StationProviderFeature, self.stationprovider)
+        self.trolleyarmprovider = TrolleyArmProviderImpl(self)
+        self.set_feature_implementation(TrolleyArmProviderFeature, self.trolleyarmprovider)

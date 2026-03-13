@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.silastandard.examples.trolleyarmprovider.v1;
+
+/* Provides station-level control for a single lab station (one experimental device managed by the SiLA2 server). Exposes the station status and allows resetting the station. */
+service TrolleyArmProvider {
+  /* Set trolley position on the rail as a natural number (0 or greater). */
+  rpc SetTrolleyPosition (sila2.org.silastandard.examples.trolleyarmprovider.v1.SetTrolleyPosition_Parameters) returns (sila2.org.silastandard.examples.trolleyarmprovider.v1.SetTrolleyPosition_Responses) {}
+  /* Reset the server. Raises an error if the reset fails. */
+  rpc Reset (sila2.org.silastandard.examples.trolleyarmprovider.v1.Reset_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of Reset */
+  rpc Reset_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of Reset */
+  rpc Reset_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.silastandard.examples.trolleyarmprovider.v1.Reset_Responses) {}
+  /* Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting. */
+  rpc Subscribe_Status (sila2.org.silastandard.examples.trolleyarmprovider.v1.Subscribe_Status_Parameters) returns (stream sila2.org.silastandard.examples.trolleyarmprovider.v1.Subscribe_Status_Responses) {}
+  /* Current trolley position on the rail. Natural number (0 or greater). */
+  rpc Subscribe_TrolleyPosition (sila2.org.silastandard.examples.trolleyarmprovider.v1.Subscribe_TrolleyPosition_Parameters) returns (stream sila2.org.silastandard.examples.trolleyarmprovider.v1.Subscribe_TrolleyPosition_Responses) {}
+}
+
+/* Parameters for SetTrolleyPosition */
+message SetTrolleyPosition_Parameters {
+  sila2.org.silastandard.Integer Position = 1;  /* Trolley position on the rail. Must be 0 or greater. */
+}
+
+/* Responses of SetTrolleyPosition */
+message SetTrolleyPosition_Responses {
+}
+
+/* Parameters for Reset */
+message Reset_Parameters {
+}
+
+/* Responses of Reset */
+message Reset_Responses {
+}
+
+/* Parameters for Status */
+message Subscribe_Status_Parameters {
+}
+
+/* Responses of Status */
+message Subscribe_Status_Responses {
+  sila2.org.silastandard.Integer Status = 1;  /* Current server status. 1: Idle, 2: Running, 3: Error, 4: Starting. */
+}
+
+/* Parameters for TrolleyPosition */
+message Subscribe_TrolleyPosition_Parameters {
+}
+
+/* Responses of TrolleyPosition */
+message Subscribe_TrolleyPosition_Responses {
+  sila2.org.silastandard.Integer TrolleyPosition = 1;  /* Current trolley position on the rail. Natural number (0 or greater). */
+}

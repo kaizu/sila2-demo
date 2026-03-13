@@ -7,3 +7,8 @@ from typing import NamedTuple
 class Reset_Responses(NamedTuple):
 
     pass
+
+
+class SetTrolleyPosition_Responses(NamedTuple):
+
+    pass
