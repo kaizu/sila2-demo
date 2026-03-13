@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from queue import Queue
+import time
 from typing import Optional, TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
@@ -22,10 +23,9 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         # datetime.timedelta: Command instance is deleted after this duration, can be increased during command runtime
         self.Reset_default_lifetime_of_execution = timedelta(minutes=30)
 
-        # Initialize status as Starting -> Idle -> Error for testing flows.
+        # Initialize status as Starting -> Idle.
         self.update_Status(4)
         self.update_Status(1)
-        self.update_Status(3)
 
         # Trolley starts at rail position 0.
         self.update_TrolleyPosition(0)
@@ -63,5 +63,15 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         if Position < 0:
             raise ValueError("Position must be a natural number (>= 0)")
 
-        self.update_TrolleyPosition(Position)
-        return SetTrolleyPosition_Responses()
+        if self.current_Status != 1:
+            raise RuntimeError("SetTrolleyPosition can only be executed while status is Idle (1)")
+
+        # Explicitly expose the command lifecycle as Idle -> Running -> Idle.
+        self.update_Status(2)
+        try:
+            # Keep Running state long enough to be observable by polling clients.
+            time.sleep(0.05)
+            self.update_TrolleyPosition(Position)
+            return SetTrolleyPosition_Responses()
+        finally:
+            self.update_Status(1)
