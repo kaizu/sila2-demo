@@ -18,5 +18,6 @@ venv/
 
 # Local artifacts
 wheels/
+*.egg-info/
 .env
 .env.*
