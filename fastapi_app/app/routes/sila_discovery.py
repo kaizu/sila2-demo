@@ -12,7 +12,6 @@ from sila2.discovery import SilaDiscoveryBrowser
 
 router = APIRouter()
 
-
 def _call_with_timeout(func: Any, *, timeout_seconds: float, default: Any) -> Any:
     result_queue: queue.Queue[Any] = queue.Queue(maxsize=1)
 
@@ -28,7 +27,6 @@ def _call_with_timeout(func: Any, *, timeout_seconds: float, default: Any) -> An
         return result_queue.get(timeout=timeout_seconds)
     except queue.Empty:
         return default
-
 
 def _normalize_ip(ip: str) -> str:
     return str(ipaddress.ip_address(ip))
@@ -151,6 +149,23 @@ def _reset(ip: str, port: int, insecure: bool) -> dict[str, Any]:
             "address": {"ip": ip, "port": port},
         }
 
+def _get_feature_definitions(ip: str, port: int, insecure: bool) -> dict[str, Any]:
+    with SilaClient(ip, port, insecure=insecure) as client:
+        feature_ids = list(client.SiLAService.ImplementedFeatures.get())
+        features: list[dict[str, str]] = []
+        for feature_id in feature_ids:
+            xml = client.SiLAService.GetFeatureDefinition(feature_id).FeatureDefinition
+            features.append({"feature_id": str(feature_id), "xml": xml})
+
+        return {
+            "name": client.SiLAService.ServerName.get(),
+            "uuid": client.SiLAService.ServerUUID.get(),
+            "type": client.SiLAService.ServerType.get(),
+            "address": {"ip": ip, "port": port},
+            "features": features,
+            "count": len(features),
+        }
+
 def _get_trolley_position(ip: str, port: int, insecure: bool) -> dict[str, Any]:
     with SilaClient(ip, port, insecure=insecure) as client:
         feature = _get_trolley_feature(client)
@@ -199,6 +214,29 @@ async def reset(
         raise HTTPException(status_code=503, detail=f"Reset failed: {exc}") from exc
 
     return {"server": target}
+
+@router.get("/feature-definitions")
+async def get_feature_definitions(
+    ip: str = Query(..., description="SiLA Server IPv4/IPv6 address"),
+    port: int = Query(..., ge=1, le=65535, description="SiLA Server port"),
+    insecure: bool = Query(True, description="Use insecure gRPC connection (match servers started with --insecure)"),
+):
+    """
+    Get feature definition XML strings from a SiLA2 server specified by IP and port.
+    """
+    try:
+        normalized_ip = _normalize_ip(ip)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid IP address: {ip}") from exc
+
+    try:
+        result = await asyncio.to_thread(_get_feature_definitions, normalized_ip, port, insecure)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(status_code=503, detail=f"Get feature definitions failed: {exc}") from exc
+
+    return {"server": result}
 
 @router.get("/trolley-position")
 async def get_trolley_position(
