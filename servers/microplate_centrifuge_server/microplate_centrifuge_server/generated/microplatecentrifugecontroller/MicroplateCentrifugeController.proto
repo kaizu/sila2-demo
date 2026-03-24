@@ -1,0 +1,393 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.riken.instruments.microplatecentrifugecontroller.v1;
+
+/* A SiLA Server for controlling the Microplate Centrifuge made by Agilent Technologies. The Microplate Centrifuge is a compact automated centrifuge with robotic access. It has an optional plate loader that transfers the microplate into the specified bucket in the centrifuge. Model number: G5582A Product URL : https://www.chem-agilent.com/contents.php?id=1006103 VWorks ActiveX Control (version 13.1.9.1493) is required on the computer running this SiLA Server. The Microplate Centrifuge has optional plate loader. This server assume that the plate loader is installed on the Microplate Centrifuge. */
+service MicroplateCentrifugeController {
+  /* 
+      Open the door to specified bucket.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command OpenDoor.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc OpenDoor (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.OpenDoor_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of OpenDoor */
+  rpc OpenDoor_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of OpenDoor */
+  rpc OpenDoor_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.OpenDoor_Responses) {}
+  /* 
+      Close the door.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command CloseDoor.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc CloseDoor (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.CloseDoor_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of CloseDoor */
+  rpc CloseDoor_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of CloseDoor */
+  rpc CloseDoor_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.CloseDoor_Responses) {}
+  /* 
+      Run a spin cycle with or without the Centrifuge Loader.
+
+      When Using the Loader:
+      - Set BucketNumberToLoad and BucketNumberToUnload to 1 or 2.
+
+      When Not Using the Loader:
+      - Set BucketNumberToLoad to 0
+      - Set BucketNumberToUnload to 1 or 2, based on the desired bucket to present after the spin completes.
+      In this case, the following parameters are ignored:
+      - GripperOffsetToLoad
+      - GripperOffsetToUnload
+      - PlateHeightToLoad
+      - PlateHeightToUnload
+      - SpeedToLoad
+      - SpeedToUnload
+      - OptionsToLoad
+      - OptionsToUnload
+
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command SpinCycle.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc SpinCycle (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.SpinCycle_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of SpinCycle */
+  rpc SpinCycle_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of SpinCycle */
+  rpc SpinCycle_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.SpinCycle_Responses) {}
+  /* 
+      Terminate the spin cycle currently in progress and open the door to specified bucket.
+      The following notes apply to this command:
+      * The loader does not unload the plate after the door opens, so it is necessary to call the UnloadPlate command.
+      * After this command is called, the instrument status immediately becomes Idle, but the spin continues for a while. There is no command or property to confirm whether the stop process has actually completed. If you want to detect whether the spin has fully stopped, verify the instrument's physical state.
+
+      Calling this command invokes the instrument command StopSpinCycle.
+
+      Status required to execute this command: Running
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc StopSpinCycle (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.StopSpinCycle_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of StopSpinCycle */
+  rpc StopSpinCycle_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of StopSpinCycle */
+  rpc StopSpinCycle_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.StopSpinCycle_Responses) {}
+  /* 
+      Reset the server to its Idle state. This command is common to all instruments.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command Abort.
+
+      Status required to execute this command: Error, Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc Reset (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Reset_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of Reset */
+  rpc Reset_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of Reset */
+  rpc Reset_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Reset_Responses) {}
+  /* Enumerate profiles for Microplate Centrifuge. Calling this command invokes the instrument command EnumerateProfiles. Status required to execute this command: Idle, Running Status while this command is running: Same as the status at the start of execution Status after this command finishes: Same as the status at the start of execution */
+  rpc EnumerateProfiles (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.EnumerateProfiles_Parameters) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.EnumerateProfiles_Responses) {}
+  /* 
+      Move the Centrifuge Loader to home position.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command Home.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc Home (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Home_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of Home */
+  rpc Home_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of Home */
+  rpc Home_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Home_Responses) {}
+  /* 
+      Move the Centrifuge Loader to park position.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command Park.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc Park (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Park_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of Park */
+  rpc Park_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of Park */
+  rpc Park_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Park_Responses) {}
+  /* 
+      Load a plate into the Microplate Centrifuge.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command LoadPlate.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc LoadPlate (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.LoadPlate_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of LoadPlate */
+  rpc LoadPlate_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of LoadPlate */
+  rpc LoadPlate_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.LoadPlate_Responses) {}
+  /* 
+      Unload a plate into the Microplate Centrifuge.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command UnloadPlate.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc UnloadPlate (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.UnloadPlate_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of UnloadPlate */
+  rpc UnloadPlate_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of UnloadPlate */
+  rpc UnloadPlate_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.UnloadPlate_Responses) {}
+  /* 
+      The version number of the Centrifuge Loader's ActiveX Control.
+      
+      Reading this property invokes the instrument command GetActiveXVersion.
+
+      Status required to get this property: Idle, Running
+     */
+  rpc Get_ActiveXVersion (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_ActiveXVersion_Parameters) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_ActiveXVersion_Responses) {}
+  /* 
+      The version number of the Microplate Centrifuge's ActiveX Control.
+
+      Reading this property invokes the instrument command GetCentrifugeActiveXVersion.
+
+      Status required to get this property: Idle, Running
+     */
+  rpc Get_CentrifugeActiveXVersion (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_CentrifugeActiveXVersion_Parameters) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_CentrifugeActiveXVersion_Responses) {}
+  /* 
+      The version number of the Microplate Centrifuge's hardware.
+
+      Reading this property invokes the instrument command GetCentrifugeHardwareVersion.
+
+      Status required to get this property: Idle, Running
+     */
+  rpc Get_CentrifugeHardwareVersion (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_CentrifugeHardwareVersion_Parameters) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_CentrifugeHardwareVersion_Responses) {}
+  /* 
+      The version number of the Centrifuge Loader's firmware.
+
+      Reading this property invokes the instrument command GetFirmwareVersion.
+
+      Status required to get this property: Idle, Running
+     */
+  rpc Get_FirmwareVersion (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_FirmwareVersion_Parameters) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_FirmwareVersion_Responses) {}
+  /* 
+      The version number of the Centrifuge Loader's hardware.
+
+      Reading this property invokes the instrument command GetHardwareVersion.
+
+      Status required to get this property: Idle, Running
+     */
+  rpc Get_HardwareVersion (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_HardwareVersion_Parameters) returns (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Get_HardwareVersion_Responses) {}
+  /* 
+      Returns the status of the instrument. This property is common to all instruments.
+      0: Not Connected
+      1: Idle
+      2: Running
+      3: Error
+     */
+  rpc Subscribe_Status (sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Subscribe_Status_Parameters) returns (stream sila2.org.riken.instruments.microplatecentrifugecontroller.v1.Subscribe_Status_Responses) {}
+}
+
+/* Parameters for OpenDoor */
+message OpenDoor_Parameters {
+  sila2.org.silastandard.Integer BucketNumber = 1;  /* The bucket number to be presented. */
+}
+
+/* Responses of OpenDoor */
+message OpenDoor_Responses {
+}
+
+/* Parameters for CloseDoor */
+message CloseDoor_Parameters {
+}
+
+/* Responses of CloseDoor */
+message CloseDoor_Responses {
+}
+
+/* Parameters for SpinCycle */
+message SpinCycle_Parameters {
+  sila2.org.silastandard.Real VelocityPercent = 1;  /* Percentage of maximum velocity for spinning the Microplate Centrifuge. */
+  sila2.org.silastandard.Real AccelerationPercent = 2;  /* Percentage of maximum acceleration for spinning the Microplate Centrifuge. */
+  sila2.org.silastandard.Real DecelerationPercent = 3;  /* Percentage of maximum deceleration for spinning the Microplate Centrifuge. */
+  sila2.org.silastandard.Integer TimerMode = 4;  /* Specify how the value entered in the Time parameter should be used for spinning. 0: total time (including acceleration and deceleration time) 1: duration of spinning at the target speed (excluding acceleration and deceleration time) */
+  sila2.org.silastandard.Integer Time = 5;  /* Number of seconds to spin. */
+  sila2.org.silastandard.Integer BucketNumberToLoad = 6;  /* The number of the Microplate Centrifuge bucket to load with a plate. If you set 0, loading/unloading is not executed, just spin the Microplate Centrifuge. */
+  sila2.org.silastandard.Integer BucketNumberToUnload = 7;  /* The number of the Microplate Centrifuge bucket to unload a plate. If you set 0 to BucketNumberToLoad (= no bucket is loaded), BucketNumberToUnload indicates which bucket to present after the spin. */
+  sila2.org.silastandard.Real GripperOffsetToLoad = 8;  /* Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during loading. The default gripper offset is 8 mm. */
+  sila2.org.silastandard.Real GripperOffsetToUnload = 9;  /* Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during unloading. The default gripper offset is 8 mm. */
+  sila2.org.silastandard.Real PlateHeightToLoad = 10;  /* The height of the plate to load. The default plate height is 15 mm. */
+  sila2.org.silastandard.Real PlateHeightToUnload = 11;  /* The height of the plate to unload. The default plate height is 15 mm. */
+  sila2.org.silastandard.Integer SpeedToLoad = 12;  /* The speed at which the Centrifuge Loader should move during the loading process. 0: slow 1: medium 2: fast */
+  sila2.org.silastandard.Integer SpeedToUnload = 13;  /* The speed at which the Centrifuge Loader should move during the unloading process. 0: slow 1: medium 2: fast */
+  sila2.org.silastandard.Integer OptionsToLoad = 14;  /* Options for loading plate. 0: No options set 1: Ignore plate sensor 2: Grip plates gently 3: Ignore plate sensor and grip plates gently 4: Assume maximum plate height 5: Assume maximum plate height and Ignore plate sensor 6: Assume maximum plate height and Grip plates gently 7: Use all options The options should be applied during the loading process. If the assume maximum plate height option is used, the PlateHeightToLoad parameter is ignored. */
+  sila2.org.silastandard.Integer OptionsToUnload = 15;  /* Options for unloading plate. 0: No options set 1: Ignore plate sensor 2: Grip plates gently 3: Ignore plate sensor and grip plates gently 4: Assume maximum plate height 5: Assume maximum plate height and Ignore plate sensor 6: Assume maximum plate height and Grip plates gently 7: Use all options The options should be applied during the unloading process. If the assume maximum plate height option is used, the PlateHeightToUnload parameter is ignored. */
+}
+
+/* Responses of SpinCycle */
+message SpinCycle_Responses {
+}
+
+/* Parameters for StopSpinCycle */
+message StopSpinCycle_Parameters {
+  sila2.org.silastandard.Integer BucketNumber = 1;  /* The bucket number to be presented. */
+}
+
+/* Responses of StopSpinCycle */
+message StopSpinCycle_Responses {
+}
+
+/* Parameters for Reset */
+message Reset_Parameters {
+}
+
+/* Responses of Reset */
+message Reset_Responses {
+}
+
+/* Parameters for EnumerateProfiles */
+message EnumerateProfiles_Parameters {
+}
+
+/* Responses of EnumerateProfiles */
+message EnumerateProfiles_Responses {
+  repeated sila2.org.silastandard.String ProfileNames = 1;  /* The names of the profiles. */
+}
+
+/* Parameters for Home */
+message Home_Parameters {
+}
+
+/* Responses of Home */
+message Home_Responses {
+}
+
+/* Parameters for Park */
+message Park_Parameters {
+}
+
+/* Responses of Park */
+message Park_Responses {
+}
+
+/* Parameters for LoadPlate */
+message LoadPlate_Parameters {
+  sila2.org.silastandard.Integer BucketNumber = 1;  /* The number of the Microplate Centrifuge bucket to load a plate. */
+  sila2.org.silastandard.Real GripperOffset = 2;  /* Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during loading. The default gripper offset is 8 mm. */
+  sila2.org.silastandard.Real PlateHeight = 3;  /* The height of the plate to load. The default plate height is 15 mm. */
+  sila2.org.silastandard.Integer Speed = 4;  /* The speed at which the Centrifuge Loader should move during the loading process. 0: slow 1: medium 2: fast */
+  sila2.org.silastandard.Integer Options = 5;  /* Options for loading plate. 0: No options set 1: Ignore plate sensor 2: Grip plates gently 3: Ignore plate sensor and grip plates gently 4: Assume maximum plate height 5: Assume maximum plate height and Ignore plate sensor 6: Assume maximum plate height and Grip plates gently 7: Use all options The options should be applied during the loading process. If the assume maximum plate height option is used, the PlateHeight parameter is ignored. */
+}
+
+/* Responses of LoadPlate */
+message LoadPlate_Responses {
+}
+
+/* Parameters for UnloadPlate */
+message UnloadPlate_Parameters {
+  sila2.org.silastandard.Integer BucketNumber = 1;  /* The number of the Microplate Centrifuge bucket to unload a plate. */
+  sila2.org.silastandard.Real GripperOffset = 2;  /* Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during unloading. The default gripper offset is 8 mm. */
+  sila2.org.silastandard.Real PlateHeight = 3;  /* The height of the plate to unload. The default plate height is 15 mm. */
+  sila2.org.silastandard.Integer Speed = 4;  /* The speed at which the Centrifuge Loader should move during the unloading process. 0: slow 1: medium 2: fast */
+  sila2.org.silastandard.Integer Options = 5;  /* Options for unloading plate. 0: No options set 1: Ignore plate sensor 2: Grip plates gently 3: Ignore plate sensor and grip plates gently 4: Assume maximum plate height 5: Assume maximum plate height and Ignore plate sensor 6: Assume maximum plate height and Grip plates gently 7: Use all options The options should be applied during the unloading process. If the assume maximum plate height option is used, the PlateHeight parameter is ignored. */
+}
+
+/* Responses of UnloadPlate */
+message UnloadPlate_Responses {
+}
+
+/* Parameters for ActiveXVersion */
+message Get_ActiveXVersion_Parameters {
+}
+
+/* Responses of ActiveXVersion */
+message Get_ActiveXVersion_Responses {
+  sila2.org.silastandard.String ActiveXVersion = 1;  /* The version number of the Centrifuge Loader's ActiveX Control. Reading this property invokes the instrument command GetActiveXVersion. Status required to get this property: Idle, Running */
+}
+
+/* Parameters for CentrifugeActiveXVersion */
+message Get_CentrifugeActiveXVersion_Parameters {
+}
+
+/* Responses of CentrifugeActiveXVersion */
+message Get_CentrifugeActiveXVersion_Responses {
+  sila2.org.silastandard.String CentrifugeActiveXVersion = 1;  /* The version number of the Microplate Centrifuge's ActiveX Control. Reading this property invokes the instrument command GetCentrifugeActiveXVersion. Status required to get this property: Idle, Running */
+}
+
+/* Parameters for CentrifugeHardwareVersion */
+message Get_CentrifugeHardwareVersion_Parameters {
+}
+
+/* Responses of CentrifugeHardwareVersion */
+message Get_CentrifugeHardwareVersion_Responses {
+  sila2.org.silastandard.String CentrifugeHardwareVersion = 1;  /* The version number of the Microplate Centrifuge's hardware. Reading this property invokes the instrument command GetCentrifugeHardwareVersion. Status required to get this property: Idle, Running */
+}
+
+/* Parameters for FirmwareVersion */
+message Get_FirmwareVersion_Parameters {
+}
+
+/* Responses of FirmwareVersion */
+message Get_FirmwareVersion_Responses {
+  sila2.org.silastandard.String FirmwareVersion = 1;  /* The version number of the Centrifuge Loader's firmware. Reading this property invokes the instrument command GetFirmwareVersion. Status required to get this property: Idle, Running */
+}
+
+/* Parameters for HardwareVersion */
+message Get_HardwareVersion_Parameters {
+}
+
+/* Responses of HardwareVersion */
+message Get_HardwareVersion_Responses {
+  sila2.org.silastandard.String HardwareVersion = 1;  /* The version number of the Centrifuge Loader's hardware. Reading this property invokes the instrument command GetHardwareVersion. Status required to get this property: Idle, Running */
+}
+
+/* Parameters for Status */
+message Subscribe_Status_Parameters {
+}
+
+/* Responses of Status */
+message Subscribe_Status_Responses {
+  sila2.org.silastandard.Integer Status = 1;  /* Returns the status of the instrument. This property is common to all instruments. 0: Not Connected 1: Idle 2: Running 3: Error */
+}

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
+import queue
+import threading
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -11,25 +13,46 @@ from sila2.discovery import SilaDiscoveryBrowser
 router = APIRouter()
 
 
+def _call_with_timeout(func: Any, *, timeout_seconds: float, default: Any) -> Any:
+    result_queue: queue.Queue[Any] = queue.Queue(maxsize=1)
+
+    def _worker() -> None:
+        try:
+            result_queue.put(func())
+        except Exception:
+            result_queue.put(default)
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+    try:
+        return result_queue.get(timeout=timeout_seconds)
+    except queue.Empty:
+        return default
+
+
 def _normalize_ip(ip: str) -> str:
     return str(ipaddress.ip_address(ip))
 
-
 def _get_control_feature(client: Any):
-    # Support both legacy StationProvider and renamed TrolleyArmProvider.
-    for feature_name in ("StationProvider", "TrolleyArmProvider"):
+    # Support legacy providers and new mock instrument controller features.
+    for feature_name in (
+        "StationProvider",
+        "TrolleyArmProvider",
+        "AutomatedPlateSealRemoverController",
+        "AutomatedThermalCyclerController",
+        "MicroplateCentrifugeController",
+        "PlateLocController",
+    ):
         feature = getattr(client, feature_name, None)
         if feature is not None:
             return feature
     return None
-
 
 def _get_trolley_feature(client: Any):
     feature = getattr(client, "TrolleyArmProvider", None)
     if feature is None:
         raise RuntimeError("TrolleyArmProvider feature not available on target server")
     return feature
-
 
 def _discover(timeout: float, insecure: bool) -> List[dict[str, Any]]:
     results: List[dict[str, Any]] = []
@@ -41,26 +64,30 @@ def _discover(timeout: float, insecure: bool) -> List[dict[str, Any]]:
             time.sleep(timeout)
         for client in browser.clients:
             status_value = -1
+            name = _call_with_timeout(lambda: client.SiLAService.ServerName.get(), timeout_seconds=2.0, default="unknown")
+            uuid = _call_with_timeout(lambda: client.SiLAService.ServerUUID.get(), timeout_seconds=2.0, default="unknown")
+            server_type = _call_with_timeout(lambda: client.SiLAService.ServerType.get(), timeout_seconds=2.0, default="unknown")
             try:
                 control_feature = _get_control_feature(client)
                 if control_feature is not None:
                     status_prop = getattr(control_feature, "Status", None)
                     if status_prop is not None:
-                        status_value = int(status_prop.get())
+                        status_value = int(
+                            _call_with_timeout(lambda: status_prop.get(), timeout_seconds=2.0, default=-1)
+                        )
             except Exception:
                 status_value = -1
 
             results.append(
                 {
-                    "name": client.SiLAService.ServerName.get(),
-                    "uuid": client.SiLAService.ServerUUID.get(),
-                    "type": client.SiLAService.ServerType.get(),
+                    "name": name,
+                    "uuid": uuid,
+                    "type": server_type,
                     "address": {"ip": client.address, "port": client.port},
                     "status": status_value,
                 }
             )
     return results
-
 
 @router.get("/discover")
 async def discover(
@@ -75,7 +102,6 @@ async def discover(
     except Exception as exc:  # pragma: no cover - defensive
         raise HTTPException(status_code=503, detail=f"Discovery failed: {exc}") from exc
     return {"servers": data, "count": len(data)}
-
 
 # Kept for possible future reuse with discovery-based reset by name/UUID.
 # def _find_matching_client(
@@ -125,7 +151,6 @@ def _reset(ip: str, port: int, insecure: bool) -> dict[str, Any]:
             "address": {"ip": ip, "port": port},
         }
 
-
 def _get_trolley_position(ip: str, port: int, insecure: bool) -> dict[str, Any]:
     with SilaClient(ip, port, insecure=insecure) as client:
         feature = _get_trolley_feature(client)
@@ -137,7 +162,6 @@ def _get_trolley_position(ip: str, port: int, insecure: bool) -> dict[str, Any]:
             "address": {"ip": ip, "port": port},
             "position": position,
         }
-
 
 def _set_trolley_position(ip: str, port: int, position: int, insecure: bool) -> dict[str, Any]:
     with SilaClient(ip, port, insecure=insecure) as client:
@@ -151,7 +175,6 @@ def _set_trolley_position(ip: str, port: int, position: int, insecure: bool) -> 
             "address": {"ip": ip, "port": port},
             "position": current_position,
         }
-
 
 @router.post("/reset")
 async def reset(
@@ -177,7 +200,6 @@ async def reset(
 
     return {"server": target}
 
-
 @router.get("/trolley-position")
 async def get_trolley_position(
     ip: str = Query(..., description="SiLA Server IPv4/IPv6 address"),
@@ -200,7 +222,6 @@ async def get_trolley_position(
         raise HTTPException(status_code=503, detail=f"Get trolley position failed: {exc}") from exc
 
     return {"server": result}
-
 
 @router.post("/trolley-position")
 async def set_trolley_position(

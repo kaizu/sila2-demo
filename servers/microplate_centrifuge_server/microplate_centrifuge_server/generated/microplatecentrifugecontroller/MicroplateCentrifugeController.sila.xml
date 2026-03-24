@@ -1,0 +1,943 @@
+<Feature xmlns="http://www.sila-standard.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Category="instruments" FeatureVersion="1.0" MaturityLevel="Draft" Originator="org.riken" SiLA2Version="1.0" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>MicroplateCentrifugeController</Identifier>
+  <DisplayName>Microplate Centrifuge Controller</DisplayName>
+  <Description>A SiLA Server for controlling the Microplate Centrifuge made by Agilent Technologies.
+
+    The Microplate Centrifuge is a compact automated centrifuge with robotic access. It has an optional plate loader that transfers the microplate into the specified bucket in the centrifuge.
+    Model number: G5582A
+    Product URL : https://www.chem-agilent.com/contents.php?id=1006103
+
+    VWorks ActiveX Control (version 13.1.9.1493) is required on the computer running this SiLA Server.
+    The Microplate Centrifuge has optional plate loader. This server assume that the plate loader is installed on the Microplate Centrifuge.</Description>
+  <!-- Commands -->
+  <Command>
+    <Identifier>OpenDoor</Identifier>
+    <DisplayName>Open Door</DisplayName>
+    <Description>Open the door to specified bucket.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command OpenDoor.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>BucketNumber</Identifier>
+      <DisplayName>Bucket Number</DisplayName>
+      <Description>The bucket number to be presented.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>CloseDoor</Identifier>
+    <DisplayName>Close Door</DisplayName>
+    <Description>Close the door.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command CloseDoor.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>SpinCycle</Identifier>
+    <DisplayName>Spin Cycle</DisplayName>
+    <Description>Run a spin cycle with or without the Centrifuge Loader.
+
+      When Using the Loader:
+      - Set BucketNumberToLoad and BucketNumberToUnload to 1 or 2.
+
+      When Not Using the Loader:
+      - Set BucketNumberToLoad to 0
+      - Set BucketNumberToUnload to 1 or 2, based on the desired bucket to present after the spin completes.
+      In this case, the following parameters are ignored:
+      - GripperOffsetToLoad
+      - GripperOffsetToUnload
+      - PlateHeightToLoad
+      - PlateHeightToUnload
+      - SpeedToLoad
+      - SpeedToUnload
+      - OptionsToLoad
+      - OptionsToUnload
+
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command SpinCycle.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>VelocityPercent</Identifier>
+      <DisplayName>Velocity Percent</DisplayName>
+      <Description>Percentage of maximum velocity for spinning the Microplate Centrifuge.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>100</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>AccelerationPercent</Identifier>
+      <DisplayName>Acceleration Percent</DisplayName>
+      <Description>Percentage of maximum acceleration for spinning the Microplate Centrifuge.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>100</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>DecelerationPercent</Identifier>
+      <DisplayName>Deceleration Percent</DisplayName>
+      <Description>Percentage of maximum deceleration for spinning the Microplate Centrifuge.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>100</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>TimerMode</Identifier>
+      <DisplayName>Timer Mode</DisplayName>
+      <Description>Specify how the value entered in the Time parameter should be used for spinning.
+        0: total time (including acceleration and deceleration time)
+        1: duration of spinning at the target speed (excluding acceleration and deceleration time)</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>Time</Identifier>
+      <DisplayName>Time</DisplayName>
+      <Description>Number of seconds to spin.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>86400</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>BucketNumberToLoad</Identifier>
+      <DisplayName>Bucket Number To Load</DisplayName>
+      <Description>The number of the Microplate Centrifuge bucket to load with a plate.
+        If you set 0, loading/unloading is not executed, just spin the Microplate Centrifuge.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>BucketNumberToUnload</Identifier>
+      <DisplayName>Bucket Number To Unload</DisplayName>
+      <Description>The number of the Microplate Centrifuge bucket to unload a plate.
+        If you set 0 to BucketNumberToLoad (= no bucket is loaded), BucketNumberToUnload indicates which bucket to present after the spin.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>GripperOffsetToLoad</Identifier>
+      <DisplayName>Gripper Offset To Load</DisplayName>
+      <Description>Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during loading.
+        The default gripper offset is 8 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>21.1</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>GripperOffsetToUnload</Identifier>
+      <DisplayName>Gripper Offset To Unload</DisplayName>
+      <Description>Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during unloading.
+        The default gripper offset is 8 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>21.1</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>PlateHeightToLoad</Identifier>
+      <DisplayName>Plate Height To Load</DisplayName>
+      <Description>The height of the plate to load.
+        The default plate height is 15 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>48.3</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>PlateHeightToUnload</Identifier>
+      <DisplayName>Plate Height To Unload</DisplayName>
+      <Description>The height of the plate to unload.
+        The default plate height is 15 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>48.3</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>SpeedToLoad</Identifier>
+      <DisplayName>Speed To load</DisplayName>
+      <Description>The speed at which the Centrifuge Loader should move during the loading process.
+        0: slow
+        1: medium
+        2: fast</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>SpeedToUnload</Identifier>
+      <DisplayName>Speed To unload</DisplayName>
+      <Description>The speed at which the Centrifuge Loader should move during the unloading process.
+        0: slow
+        1: medium
+        2: fast</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>OptionsToLoad</Identifier>
+      <DisplayName>Options To Load</DisplayName>
+      <Description>Options for loading plate.
+
+        0: No options set
+        1: Ignore plate sensor
+        2: Grip plates gently
+        3: Ignore plate sensor and grip plates gently
+        4: Assume maximum plate height
+        5: Assume maximum plate height and Ignore plate sensor
+        6: Assume maximum plate height and Grip plates gently
+        7: Use all options
+
+        The options should be applied during the loading process.
+        If the assume maximum plate height option is used, the PlateHeightToLoad parameter is ignored.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+              <Value>3</Value>
+              <Value>4</Value>
+              <Value>5</Value>
+              <Value>6</Value>
+              <Value>7</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>OptionsToUnload</Identifier>
+      <DisplayName>Options To Unload</DisplayName>
+      <Description>Options for unloading plate.
+
+        0: No options set
+        1: Ignore plate sensor
+        2: Grip plates gently
+        3: Ignore plate sensor and grip plates gently
+        4: Assume maximum plate height
+        5: Assume maximum plate height and Ignore plate sensor
+        6: Assume maximum plate height and Grip plates gently
+        7: Use all options
+
+        The options should be applied during the unloading process.
+        If the assume maximum plate height option is used, the PlateHeightToUnload parameter is ignored.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+              <Value>3</Value>
+              <Value>4</Value>
+              <Value>5</Value>
+              <Value>6</Value>
+              <Value>7</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>StopSpinCycle</Identifier>
+    <DisplayName>Stop Spin Cycle</DisplayName>
+    <Description>Terminate the spin cycle currently in progress and open the door to specified bucket.
+      The following notes apply to this command:
+      * The loader does not unload the plate after the door opens, so it is necessary to call the UnloadPlate command.
+      * After this command is called, the instrument status immediately becomes Idle, but the spin continues for a while. There is no command or property to confirm whether the stop process has actually completed. If you want to detect whether the spin has fully stopped, verify the instrument's physical state.
+
+      Calling this command invokes the instrument command StopSpinCycle.
+
+      Status required to execute this command: Running
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>BucketNumber</Identifier>
+      <DisplayName>Bucket Number</DisplayName>
+      <Description>The bucket number to be presented.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>Reset</Identifier>
+    <DisplayName>Reset</DisplayName>
+    <Description>Reset the server to its Idle state. This command is common to all instruments.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command Abort.
+
+      Status required to execute this command: Error, Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>EnumerateProfiles</Identifier>
+    <DisplayName>Enumerate Profiles</DisplayName>
+    <Description>Enumerate profiles for Microplate Centrifuge.
+
+      Calling this command invokes the instrument command EnumerateProfiles.
+
+      Status required to execute this command: Idle, Running
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes:  Same as the status at the start of execution</Description>
+    <Observable>No</Observable>
+    <Response>
+      <Identifier>ProfileNames</Identifier>
+      <DisplayName>Profile names</DisplayName>
+      <Description>The names of the profiles.</Description>
+      <DataType>
+        <List>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </List>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>Home</Identifier>
+    <DisplayName>Home</DisplayName>
+    <Description>Move the Centrifuge Loader to home position.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command Home.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>Park</Identifier>
+    <DisplayName>Park</DisplayName>
+    <Description>Move the Centrifuge Loader to park position.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command Park.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>LoadPlate</Identifier>
+    <DisplayName>Load Plate</DisplayName>
+    <Description>Load a plate into the Microplate Centrifuge.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command LoadPlate.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>BucketNumber</Identifier>
+      <DisplayName>Bucket Number</DisplayName>
+      <Description>The number of the Microplate Centrifuge bucket to load a plate.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>GripperOffset</Identifier>
+      <DisplayName>Gripper Offset</DisplayName>
+      <Description>Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during loading.
+        The default gripper offset is 8 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>21.1</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>PlateHeight</Identifier>
+      <DisplayName>Plate Height</DisplayName>
+      <Description>The height of the plate to load.
+        The default plate height is 15 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>48.3</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>Speed</Identifier>
+      <DisplayName>Speed</DisplayName>
+      <Description>The speed at which the Centrifuge Loader should move during the loading process.
+        0: slow
+        1: medium
+        2: fast</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>Options</Identifier>
+      <DisplayName>Options</DisplayName>
+      <Description>Options for loading plate.
+
+        0: No options set
+        1: Ignore plate sensor
+        2: Grip plates gently
+        3: Ignore plate sensor and grip plates gently
+        4: Assume maximum plate height
+        5: Assume maximum plate height and Ignore plate sensor
+        6: Assume maximum plate height and Grip plates gently
+        7: Use all options
+
+        The options should be applied during the loading process.
+        If the assume maximum plate height option is used, the PlateHeight parameter is ignored.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+              <Value>3</Value>
+              <Value>4</Value>
+              <Value>5</Value>
+              <Value>6</Value>
+              <Value>7</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>UnloadPlate</Identifier>
+    <DisplayName>Unload Plate</DisplayName>
+    <Description>Unload a plate into the Microplate Centrifuge.
+      If you call this command while another observable command is running, the request will be rejected.
+
+      Calling this command invokes the instrument command UnloadPlate.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>BucketNumber</Identifier>
+      <DisplayName>Bucket Number</DisplayName>
+      <Description>The number of the Microplate Centrifuge bucket to unload a plate.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>GripperOffset</Identifier>
+      <DisplayName>Gripper Offset</DisplayName>
+      <Description>Specifies the distance (mm) from the plate bottom to the gripping point of the gripper center during unloading.
+        The default gripper offset is 8 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>21.1</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>PlateHeight</Identifier>
+      <DisplayName>Plate Height</DisplayName>
+      <Description>The height of the plate to unload.
+        The default plate height is 15 mm.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>2.6</MinimalInclusive>
+            <MaximalInclusive>48.3</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>Speed</Identifier>
+      <DisplayName>Speed</DisplayName>
+      <Description>The speed at which the Centrifuge Loader should move during the unloading process.
+        0: slow
+        1: medium
+        2: fast</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>Options</Identifier>
+      <DisplayName>Options</DisplayName>
+      <Description>Options for unloading plate.
+
+        0: No options set
+        1: Ignore plate sensor
+        2: Grip plates gently
+        3: Ignore plate sensor and grip plates gently
+        4: Assume maximum plate height
+        5: Assume maximum plate height and Ignore plate sensor
+        6: Assume maximum plate height and Grip plates gently
+        7: Use all options
+
+        The options should be applied during the unloading process.
+        If the assume maximum plate height option is used, the PlateHeight parameter is ignored.</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <Set>
+              <Value>0</Value>
+              <Value>1</Value>
+              <Value>2</Value>
+              <Value>3</Value>
+              <Value>4</Value>
+              <Value>5</Value>
+              <Value>6</Value>
+              <Value>7</Value>
+            </Set>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>CommandIsRunning</Identifier>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <!-- Properties -->
+  <Property>
+    <Identifier>ActiveXVersion</Identifier>
+    <DisplayName>ActiveX Version</DisplayName>
+    <Description>The version number of the Centrifuge Loader's ActiveX Control.
+      
+      Reading this property invokes the instrument command GetActiveXVersion.
+
+      Status required to get this property: Idle, Running</Description>
+    <Observable>No</Observable>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Property>
+  <Property>
+    <Identifier>CentrifugeActiveXVersion</Identifier>
+    <DisplayName>Centrifuge ActiveX Version</DisplayName>
+    <Description>The version number of the Microplate Centrifuge's ActiveX Control.
+
+      Reading this property invokes the instrument command GetCentrifugeActiveXVersion.
+
+      Status required to get this property: Idle, Running</Description>
+    <Observable>No</Observable>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Property>
+  <Property>
+    <Identifier>CentrifugeHardwareVersion</Identifier>
+    <DisplayName>Centrifuge Hardware Version</DisplayName>
+    <Description>The version number of the Microplate Centrifuge's hardware.
+
+      Reading this property invokes the instrument command GetCentrifugeHardwareVersion.
+
+      Status required to get this property: Idle, Running</Description>
+    <Observable>No</Observable>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Property>
+  <Property>
+    <Identifier>FirmwareVersion</Identifier>
+    <DisplayName>Firmware Version</DisplayName>
+    <Description>The version number of the Centrifuge Loader's firmware.
+
+      Reading this property invokes the instrument command GetFirmwareVersion.
+
+      Status required to get this property: Idle, Running</Description>
+    <Observable>No</Observable>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Property>
+  <Property>
+    <Identifier>HardwareVersion</Identifier>
+    <DisplayName>Hardware Version</DisplayName>
+    <Description>The version number of the Centrifuge Loader's hardware.
+
+      Reading this property invokes the instrument command GetHardwareVersion.
+
+      Status required to get this property: Idle, Running</Description>
+    <Observable>No</Observable>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Property>
+  <Property>
+    <Identifier>Status</Identifier>
+    <DisplayName>Status</DisplayName>
+    <Description>Returns the status of the instrument. This property is common to all instruments.
+      0: Not Connected
+      1: Idle
+      2: Running
+      3: Error</Description>
+    <Observable>Yes</Observable>
+    <DataType>
+      <Constrained>
+        <DataType>
+          <Basic>Integer</Basic>
+        </DataType>
+        <Constraints>
+          <MinimalInclusive>0</MinimalInclusive>
+          <MaximalInclusive>3</MaximalInclusive>
+        </Constraints>
+      </Constrained>
+    </DataType>
+  </Property>
+  <!-- Error definitions -->
+  <DefinedExecutionError>
+    <Identifier>CommandIsRunning</Identifier>
+    <DisplayName>Command is running</DisplayName>
+    <Description>The command is currently running. Please retry after the execution is completed.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>NotInitialized</Identifier>
+    <DisplayName>Not Initialized</DisplayName>
+    <Description>MicroplateCentrifuge is not initialized. The possible causes are as follows:
+      * MicroplateCentrifuge is connected to the PC running MicroplateCentrifugeController.
+      * The profile for MicroplateCentrifuge has been created and the correct profile is specified.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InstrumentErrorOccurred</Identifier>
+    <DisplayName>Instrument Error Occurred</DisplayName>
+    <Description>An error occurred on the Instrument during command execution. Inspect the instrument.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InvalidInstrumentStatusError</Identifier>
+    <DisplayName>Invalid Instrument Status Error</DisplayName>
+    <Description>The instrument is not in a valid status to accept the specified command.</Description>
+  </DefinedExecutionError>
+</Feature>

@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Draft" Originator="org.riken"
+         Category="instruments"
+         xmlns="http://www.sila-standard.org"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+
+  <Identifier>AutomatedThermalCyclerController</Identifier>
+  <DisplayName>Automated Thermal Cycler Controller</DisplayName>
+  <Description>
+    A SiLA Server for controlling the Automated Thermal Cycler (ATC) made by Thermo Fisher Scientific.
+
+    The Automated Thermal Cycler is a small, easy-to-integrate thermal cycler. It supports 96‑well and 0.2‑mL sample block configuration (compatible with full‑ or half‑skirted plates).
+    Model number    : A31487
+    Product URL     : https://www.thermofisher.com/order/catalog/product/A31487
+    Firmware Version: v1.2.0
+  </Description>
+
+  <!-- Commands -->
+  <Command>
+    <Identifier>Load</Identifier>
+    <DisplayName>Load</DisplayName>
+    <Description>
+      Load the protocol file.
+
+      Calling this command invokes the instrument command load.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes: Same as the status at the start of execution
+    </Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>ProtocolFileData</Identifier>
+      <DisplayName>Protocol File Data</DisplayName>
+      <Description>
+        Protocol file in binary form. The original protocol file is expected to be in XML format.
+        Note: The file must be encoded in UTF-8.
+      </Description>
+      <DataType>
+        <Basic>Binary</Basic>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+      <Identifier>InvalidProtocol</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>Validate</Identifier>
+    <DisplayName>Validate</DisplayName>
+    <Description>
+      Validate the protocol file.
+
+      Calling this command invokes the instrument command validate.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes: Same as the status at the start of execution
+    </Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>MaxSampleVolume</Identifier>
+      <DisplayName>Max Sample Volume</DisplayName>
+      <Description>
+        Upper limit of sample volume.
+        If set to 0, the default value is used.
+      </Description>
+      <DataType>
+        <Basic>Real</Basic>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+      <Identifier>ProtocolNotLoaded</Identifier>
+      <Identifier>InvalidProtocol</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>OpenLid</Identifier>
+    <DisplayName>Open Lid</DisplayName>
+    <Description>
+      Open the lid of the ATC.
+
+      Calling this command invokes the instrument command openLid.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Same as the status at the start of execution
+        If an error occurs: Error
+    </Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>CloseLid</Identifier>
+    <DisplayName>Close Lid</DisplayName>
+    <Description>
+      Close the lid of the ATC.
+
+      Calling this command invokes the instrument command closeLid.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Same as the status at the start of execution
+        If an error occurs: Error
+    </Description>
+    <Observable>Yes</Observable>
+        <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>StartRun</Identifier>
+    <DisplayName>Start Run</DisplayName>
+    <Description>
+      Start to run using the already loaded protocol file.
+      Note: Execute the following commands in advance.
+      * Load
+      * Validate
+      * Close Lid
+
+      Calling this command invokes the instrument command startRun, getElapsedTime, getRemainingTime.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Running
+        If an error occurs: Error
+      Note: After the protocol finishes, the status is updated according to the result:
+        Normal completion: Idle
+        Error occurred: Error
+    </Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+      <Identifier>ProtocolNotLoaded</Identifier>
+      <Identifier>ProtocolNotValidated</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>StopRun</Identifier>
+    <DisplayName>Stop Run</DisplayName>
+    <Description>
+      Stop running.
+      If this command is sent when the instrument is not running, an error occurs.
+
+      Calling this command invokes the instrument command stopRun.
+
+      Status required to execute this command: Running
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Same as the status at the start of execution
+        If an error occurs: Error
+      Note: After stop running, the status is updated according to the result:
+        Normal completion: Idle
+        Error occurred: Error
+    </Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>GetInstrumentState</Identifier>
+    <DisplayName>Get Instrument State</DisplayName>
+    <Description>
+      Get the state of the instrument.
+
+      Calling this command invokes the instrument command getInstrumentState.
+
+      Status required to execute this command: Idle, Running, Error
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Same as the status at the start of execution
+        If an error occurs: Error
+    </Description>
+    <Observable>No</Observable>
+    <Response>
+      <Identifier>InstrumentState</Identifier>
+      <DisplayName>Instrument State</DisplayName>
+      <Description>
+        The state of the instrument.
+        0: IDLE
+        1: STANDBY
+        2: RUNNING
+        3: ERROR
+        4: DIAGNOSTICS
+      </Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+              <MinimalInclusive>0</MinimalInclusive>
+              <MaximalInclusive>4</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>Reset</Identifier>
+    <DisplayName>Reset</DisplayName>
+    <Description>
+      Reset the server to its Idle state. This command is common to all instruments.
+
+      Calling this command invokes the instrument command stopRun.
+
+      Status required to execute this command: Error
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+    </Description>
+    <Observable>Yes</Observable>
+    <DefinedExecutionErrors>
+      <Identifier>NotInitialized</Identifier>
+      <Identifier>InstrumentErrorOccurred</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+
+  <!--Error Definitions-->
+  <DefinedExecutionError>
+    <Identifier>NotInitialized</Identifier>
+    <DisplayName>Not Initialized</DisplayName>
+    <Description>
+      Automated Thermal Cycler (ATC) is not initialized. The possible causes are as follows:
+      * ATC is not connected to the PC running AutomatedThermalCyclerController.
+      * The configuration for ATC (ex. HostName) is incorrect.
+    </Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InstrumentErrorOccurred</Identifier>
+    <DisplayName>Instrument Error Occurred</DisplayName>
+    <Description>
+      An error occurred on the instrument during command execution. Inspect the instrument.
+    </Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InvalidInstrumentStatusError</Identifier>
+    <DisplayName>Invalid Instrument Status Error</DisplayName>
+    <Description>
+      The instrument is not in a valid status to accept the specified command.
+    </Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>ProtocolNotLoaded</Identifier>
+    <DisplayName>Protocol Not Loaded</DisplayName>
+    <Description>
+      Protocol file has not been loaded.
+    </Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>ProtocolNotValidated</Identifier>
+    <DisplayName>Protocol Not Validated</DisplayName>
+    <Description>
+      Protocol file has been loaded but not validated.
+    </Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InvalidProtocol</Identifier>
+    <DisplayName>Invalid Protocol</DisplayName>
+    <Description>
+      Protocol file is invalid.
+    </Description>
+  </DefinedExecutionError>
+  
+  <!-- Properties -->
+  <Property>
+    <Identifier>ElapsedTime</Identifier>
+    <DisplayName>Elapsed Time</DisplayName>
+    <Description>
+      The elapsed time since the protocol started running, represented as a string in hh:mm:ss format.
+      If the protocol is not running, the value is set to 00:00:00.
+    </Description>
+    <Observable>Yes</Observable>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+  </Property>
+  <Property>
+    <Identifier>RemainingTime</Identifier>
+    <DisplayName>Remaining Time</DisplayName>
+    <Description>
+      The remaining time until the protocol completes, represented as a string in hh:mm:ss format.
+      If the protocol is not running, the value is set to 00:00:00.
+
+      Note: Until the protocol finishes, the value will not be set to 00:00:00.
+      Instead, the value will stop at 00:00:01.
+    </Description>
+    <Observable>Yes</Observable>
+    <DataType>
+      <Basic>String</Basic>
+    </DataType>
+  </Property>
+  <Property>
+    <Identifier>Status</Identifier>
+    <DisplayName>Status</DisplayName>
+    <Description>
+      Returns the status of the instrument. This property is common to all instruments.
+      0: Not Connected
+      1: Idle
+      2: Running
+      3: Error
+    </Description>
+    <Observable>Yes</Observable>
+    <DataType>
+      <Constrained>
+        <DataType>
+          <Basic>Integer</Basic>
+        </DataType>
+        <Constraints>
+          <MinimalInclusive>0</MinimalInclusive>
+          <MaximalInclusive>3</MaximalInclusive>
+        </Constraints>
+      </Constrained>
+    </DataType>
+  </Property>
+
+</Feature>

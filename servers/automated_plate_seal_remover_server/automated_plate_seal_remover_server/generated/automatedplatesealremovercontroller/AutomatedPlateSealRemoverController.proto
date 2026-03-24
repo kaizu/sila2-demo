@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.org.riken.instruments.automatedplatesealremovercontroller.v1;
+
+/* A SiLA Server for controlling the Automated Plate Seal Remover (formerly known as Xpeel) made by Azenta Life Sciences. The Automated Plate Seal Remover is an automated seal remover. It can remove various seals from various types of microplates. Model number: XP-A_100V Product URL : https://www.azenta.com/products/automated-plate-seal-remover-formerly-xpeel */
+service AutomatedPlateSealRemoverController {
+  /* 
+      Peel the seal attached to the plate.
+
+      Calling this command invokes the instrument command xpeel.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+
+      Remarks:
+        Depending on the plate and the specified parameters, the instrument may return an error even if the seal is successfully removed.
+        Please try different parameters to find a combination that allows the result to be recognized correctly.
+     */
+  rpc Peel (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.Peel_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of Peel */
+  rpc Peel_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of Peel */
+  rpc Peel_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.Peel_Responses) {}
+  /* 
+      Get the amount of tape left on the supply spool and the available capacity on the take-up spool.
+      This command may not work as intended because the instrument command returns an unexpected value due to a bug in the current firmware version.
+
+      Calling this command invokes the instrument command tapeleft.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Same as the status at the start of execution
+        If an error occurs: Error
+     */
+  rpc GetTapeLeft (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.GetTapeLeft_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of GetTapeLeft */
+  rpc GetTapeLeft_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of GetTapeLeft */
+  rpc GetTapeLeft_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.GetTapeLeft_Responses) {}
+  /* 
+      Move the spool forward a few inches to access fresh tape, return the elevator and conveyor to their home positions, and prepare the plate for pickup. Variables such as error codes and remaining tape information will be preserved.
+
+      Calling this command invokes the instrument command reset.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc ResetInstrument (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.ResetInstrument_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of ResetInstrument */
+  rpc ResetInstrument_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of ResetInstrument */
+  rpc ResetInstrument_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.ResetInstrument_Responses) {}
+  /* 
+      Reset the server to its Idle state. This command is common to all instruments.
+
+      Calling this command invokes the instrument command restart.
+
+      Status required to execute this command: Idle, Error
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+     */
+  rpc Reset (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.Reset_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
+  /* Monitor the state of Reset */
+  rpc Reset_Info (sila2.org.silastandard.CommandExecutionUUID) returns (stream sila2.org.silastandard.ExecutionInfo) {}
+  /* Retrieve result of Reset */
+  rpc Reset_Result(sila2.org.silastandard.CommandExecutionUUID) returns (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.Reset_Responses) {}
+  /* 
+      Returns the status of the instrument. This property is common to all instruments.
+      0: Not Connected
+      1: Idle
+      2: Running
+      3: Error
+     */
+  rpc Subscribe_Status (sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.Subscribe_Status_Parameters) returns (stream sila2.org.riken.instruments.automatedplatesealremovercontroller.v1.Subscribe_Status_Responses) {}
+}
+
+/* Parameters for Peel */
+message Peel_Parameters {
+  sila2.org.silastandard.Integer BeginPeelLocation = 1;  /* Parameter for the beginning location and peeling speed. 1: Default -2 mm / fast 2: Default -2 mm / slow 3: Default / fast 4: Default / slow 5: Default +2 mm / fast 6: Default +2 mm / slow 7: Default +4 mm / fast 8: Default +4 mm / slow 9: custom / custom */
+  sila2.org.silastandard.Integer AdhesionTime = 2;  /* Adhesion time between the peeler and the seal. 1: 2.5 seconds 2: 5.0 seconds 3: 7.5 seconds 4: 10.0 seconds */
+}
+
+/* Responses of Peel */
+message Peel_Responses {
+  sila2.org.silastandard.String InstrumentWarningMessage = 1;  /* Warning message corresponded to the error code returned by the instrument. If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned. */
+}
+
+/* Parameters for GetTapeLeft */
+message GetTapeLeft_Parameters {
+}
+
+/* Responses of GetTapeLeft */
+message GetTapeLeft_Responses {
+  sila2.org.silastandard.Integer SupplySpoolRemaining = 1;  /* The number of seal removals remaining on the supply spool. */
+  sila2.org.silastandard.Integer TakeUpSpoolRemaining = 2;  /* The number of seal removals that can be accommodated by the remaining space on the take-up spool. */
+  sila2.org.silastandard.String InstrumentWarningMessage = 3;  /* Warning message corresponded to the error code returned by the instrument. If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned. */
+}
+
+/* Parameters for ResetInstrument */
+message ResetInstrument_Parameters {
+}
+
+/* Responses of ResetInstrument */
+message ResetInstrument_Responses {
+  sila2.org.silastandard.String InstrumentWarningMessage = 1;  /* Warning message corresponded to the error code returned by the instrument. If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned. */
+}
+
+/* Parameters for Reset */
+message Reset_Parameters {
+}
+
+/* Responses of Reset */
+message Reset_Responses {
+  sila2.org.silastandard.String InstrumentWarningMessage = 1;  /* Warning message corresponded to the error code returned by the instrument. If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned. */
+}
+
+/* Parameters for Status */
+message Subscribe_Status_Parameters {
+}
+
+/* Responses of Status */
+message Subscribe_Status_Responses {
+  sila2.org.silastandard.Integer Status = 1;  /* Returns the status of the instrument. This property is common to all instruments. 0: Not Connected 1: Idle 2: Running 3: Error */
+}

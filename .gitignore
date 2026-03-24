@@ -15,9 +15,11 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+sila2-test.code-workspace
 
 # Local artifacts
 wheels/
 *.egg-info/
 .env
 .env.*
+scripts/

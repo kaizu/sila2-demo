@@ -1,0 +1,21 @@
+[project]
+name = "automated_thermal_cycler_server"
+version = "0.0.0"
+requires-python = ">=3.10"
+dependencies = [
+    "sila2",
+    "typer",
+]
+
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["automated_thermal_cycler_server*"]
+
+[tool.setuptools.package-data]
+"automated_thermal_cycler_server.generated" = [
+    "*/*.sila.xml",
+    "*/*.proto",
+]

@@ -1,0 +1,235 @@
+<Feature xmlns="http://www.sila-standard.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Category="instruments" FeatureVersion="1.0" MaturityLevel="Draft" Originator="org.riken" SiLA2Version="1.0" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>AutomatedPlateSealRemoverController</Identifier>
+  <DisplayName>Automated Plate Seal Remover Controller</DisplayName>
+  <Description>A SiLA Server for controlling the Automated Plate Seal Remover (formerly known as Xpeel) made by Azenta Life Sciences.
+
+    The Automated Plate Seal Remover is an automated seal remover. It can remove various seals from various types of microplates.
+    Model number: XP-A_100V
+    Product URL : https://www.azenta.com/products/automated-plate-seal-remover-formerly-xpeel</Description>
+  <!-- Commands -->
+  <Command>
+    <Identifier>Peel</Identifier>
+    <DisplayName>Peel</DisplayName>
+    <Description>Peel the seal attached to the plate.
+
+      Calling this command invokes the instrument command xpeel.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error
+
+      Remarks:
+        Depending on the plate and the specified parameters, the instrument may return an error even if the seal is successfully removed.
+        Please try different parameters to find a combination that allows the result to be recognized correctly.</Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>BeginPeelLocation</Identifier>
+      <DisplayName>Begin Peel Location</DisplayName>
+      <Description>Parameter for the beginning location and peeling speed.
+        1: Default -2 mm / fast
+        2: Default -2 mm / slow
+        3: Default / fast
+        4: Default / slow
+        5: Default +2 mm / fast
+        6: Default +2 mm / slow
+        7: Default +4 mm / fast
+        8: Default +4 mm / slow
+        9: custom / custom</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>9</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>AdhesionTime</Identifier>
+      <DisplayName>Adhesion Time</DisplayName>
+      <Description>Adhesion time between the peeler and the seal.
+        1: 2.5 seconds
+        2: 5.0 seconds
+        3: 7.5 seconds
+        4: 10.0 seconds</Description>
+      <DataType>
+        <Constrained>
+          <DataType>
+            <Basic>Integer</Basic>
+          </DataType>
+          <Constraints>
+            <MinimalInclusive>1</MinimalInclusive>
+            <MaximalInclusive>4</MaximalInclusive>
+          </Constraints>
+        </Constrained>
+      </DataType>
+    </Parameter>
+    <Response>
+      <Identifier>InstrumentWarningMessage</Identifier>
+      <DisplayName>Instrument Warning Message</DisplayName>
+      <Description>Warning message corresponded to the error code returned by the instrument.
+        If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>SerialCommunicationError</Identifier>
+      <Identifier>UnexpectedReturnValue</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+      <Identifier>InstrumentErrorDetected</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>GetTapeLeft</Identifier>
+    <DisplayName>Get Tape Left</DisplayName>
+    <Description>Get the amount of tape left on the supply spool and the available capacity on the take-up spool.
+      This command may not work as intended because the instrument command returns an unexpected value due to a bug in the current firmware version.
+
+      Calling this command invokes the instrument command tapeleft.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Same as the status at the start of execution
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Response>
+      <Identifier>SupplySpoolRemaining</Identifier>
+      <DisplayName>Supply Spool Remaining</DisplayName>
+      <Description>The number of seal removals remaining on the supply spool.</Description>
+      <DataType>
+        <Basic>Integer</Basic>
+      </DataType>
+    </Response>
+    <Response>
+      <Identifier>TakeUpSpoolRemaining</Identifier>
+      <DisplayName>Take-up Spool Remaining</DisplayName>
+      <Description>The number of seal removals that can be accommodated by the remaining space on the take-up spool.</Description>
+      <DataType>
+        <Basic>Integer</Basic>
+      </DataType>
+    </Response>
+    <Response>
+      <Identifier>InstrumentWarningMessage</Identifier>
+      <DisplayName>Instrument Warning Message</DisplayName>
+      <Description>Warning message corresponded to the error code returned by the instrument.
+        If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>SerialCommunicationError</Identifier>
+      <Identifier>UnexpectedReturnValue</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+      <Identifier>InstrumentErrorDetected</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>ResetInstrument</Identifier>
+    <DisplayName>Reset Instrument</DisplayName>
+    <Description>Move the spool forward a few inches to access fresh tape, return the elevator and conveyor to their home positions, and prepare the plate for pickup. Variables such as error codes and remaining tape information will be preserved.
+
+      Calling this command invokes the instrument command reset.
+
+      Status required to execute this command: Idle
+      Status while this command is running: Running
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Response>
+      <Identifier>InstrumentWarningMessage</Identifier>
+      <DisplayName>Instrument Warning Message</DisplayName>
+      <Description>Warning message corresponded to the error code returned by the instrument.
+        If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>SerialCommunicationError</Identifier>
+      <Identifier>UnexpectedReturnValue</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+      <Identifier>InstrumentErrorDetected</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>Reset</Identifier>
+    <DisplayName>Reset</DisplayName>
+    <Description>Reset the server to its Idle state. This command is common to all instruments.
+
+      Calling this command invokes the instrument command restart.
+
+      Status required to execute this command: Idle, Error
+      Status while this command is running: Same as the status at the start of execution
+      Status after this command finishes
+        If it completes normally: Idle
+        If an error occurs: Error</Description>
+    <Observable>Yes</Observable>
+    <Response>
+      <Identifier>InstrumentWarningMessage</Identifier>
+      <DisplayName>Instrument Warning Message</DisplayName>
+      <Description>Warning message corresponded to the error code returned by the instrument.
+        If there is no error code that indicates an instrument warning (i.e., all error codes indicate "No error" or non-warning error), the empty string will be returned.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>SerialCommunicationError</Identifier>
+      <Identifier>UnexpectedReturnValue</Identifier>
+      <Identifier>InvalidInstrumentStatusError</Identifier>
+      <Identifier>InstrumentErrorDetected</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <!-- Errors -->
+  <DefinedExecutionError>
+    <Identifier>SerialCommunicationError</Identifier>
+    <DisplayName>Serial Communication Error</DisplayName>
+    <Description>Failed to perform serial communication with the instrument.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>UnexpectedReturnValue</Identifier>
+    <DisplayName>Unexpected Return Value</DisplayName>
+    <Description>Received unexpected return value from the instrument.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InvalidInstrumentStatusError</Identifier>
+    <DisplayName>Invalid Instrument Status Error</DisplayName>
+    <Description>The instrument is not in a valid status to accept the specified command.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>InstrumentErrorDetected</Identifier>
+    <DisplayName>Instrument Error Detected</DisplayName>
+    <Description>Received any error codes from the instrument.</Description>
+  </DefinedExecutionError>
+  <!-- Properties -->
+  <Property>
+    <Identifier>Status</Identifier>
+    <DisplayName>Status</DisplayName>
+    <Description>Returns the status of the instrument. This property is common to all instruments.
+      0: Not Connected
+      1: Idle
+      2: Running
+      3: Error</Description>
+    <Observable>Yes</Observable>
+    <DataType>
+      <Constrained>
+        <DataType>
+          <Basic>Integer</Basic>
+        </DataType>
+        <Constraints>
+          <MinimalInclusive>0</MinimalInclusive>
+          <MaximalInclusive>3</MaximalInclusive>
+        </Constraints>
+      </Constrained>
+    </DataType>
+  </Property>
+</Feature>

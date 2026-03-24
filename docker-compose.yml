@@ -16,30 +16,66 @@ x-trolley-arm-server: &trolley-arm-server
     - SILA_SERVER_TYPE=TrolleyArmServer
   command: ["python", "-m", "trolley_arm_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
 
+x-microplate-centrifuge-server: &microplate-centrifuge-server
+  build:
+    context: ./servers/microplate_centrifuge_server
+    dockerfile: Dockerfile
+  environment:
+    - PYTHONUNBUFFERED=1
+    - SILA_SERVER_TYPE=MicroplateCentrifugeServer
+  command: ["python", "-m", "microplate_centrifuge_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
+
+x-plateloc-server: &plateloc-server
+  build:
+    context: ./servers/plateloc_server
+    dockerfile: Dockerfile
+  environment:
+    - PYTHONUNBUFFERED=1
+    - SILA_SERVER_TYPE=PlateLocServer
+  command: ["python", "-m", "plateloc_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
+
+x-plate-seal-remover-server: &plate-seal-remover-server
+  build:
+    context: ./servers/automated_plate_seal_remover_server
+    dockerfile: Dockerfile
+  environment:
+    - PYTHONUNBUFFERED=1
+    - SILA_SERVER_TYPE=AutomatedPlateSealRemoverServer
+  command: ["python", "-m", "automated_plate_seal_remover_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
+
+x-thermal-cycler-server: &thermal-cycler-server
+  build:
+    context: ./servers/automated_thermal_cycler_server
+    dockerfile: Dockerfile
+  environment:
+    - PYTHONUNBUFFERED=1
+    - SILA_SERVER_TYPE=AutomatedThermalCyclerServer
+  command: ["python", "-m", "automated_thermal_cycler_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure"]
+
 services:
   sila2-server-1:
-    <<: *sila2-server
+    <<: *microplate-centrifuge-server
     ports:
       - "50052:50052"
     environment:
       - SILA_SERVER_NAME=Agilent-Microplate-Centrifuge
 
   sila2-server-2:
-    <<: *sila2-server
+    <<: *plateloc-server
     ports:
       - "50053:50052"
     environment:
       - SILA_SERVER_NAME=Agilent-PlateLoc
 
   sila2-server-3:
-    <<: *sila2-server
+    <<: *plate-seal-remover-server
     ports:
       - "50054:50052"
     environment:
       - SILA_SERVER_NAME=Azenta-Automated-Plate-Seal-Remover
 
   sila2-server-4:
-    <<: *sila2-server
+    <<: *thermal-cycler-server
     ports:
       - "50055:50052"
     environment:
