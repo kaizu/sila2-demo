@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from datetime import timedelta
+import logging
 from queue import Queue
 from typing import TYPE_CHECKING, Optional
 
@@ -24,6 +25,9 @@ from ..generated.microplatecentrifugecontroller import (
 
 if TYPE_CHECKING:
     from ..server import Server
+
+
+logger = logging.getLogger(__name__)
 
 
 class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
@@ -84,6 +88,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         return self._hardware_version
 
     def EnumerateProfiles(self, *, metadata: MetadataDict) -> EnumerateProfiles_Responses:
+        logger.info("MicroplateCentrifugeController.EnumerateProfiles called")
         return EnumerateProfiles_Responses(self._profiles)
 
     def OpenDoor(
@@ -93,6 +98,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> OpenDoor_Responses:
+        logger.info("MicroplateCentrifugeController.OpenDoor called: bucket_number=%s", BucketNumber)
         self._validate_bucket(BucketNumber)
         self._run_observable(instance)
         try:
@@ -107,6 +113,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> CloseDoor_Responses:
+        logger.info("MicroplateCentrifugeController.CloseDoor called")
         self._run_observable(instance)
         try:
             self._door_bucket = 0
@@ -135,6 +142,17 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> SpinCycle_Responses:
+        logger.info(
+            "MicroplateCentrifugeController.SpinCycle called: velocity_percent=%s acceleration_percent=%s "
+            "deceleration_percent=%s timer_mode=%s time=%s bucket_number_to_load=%s bucket_number_to_unload=%s",
+            VelocityPercent,
+            AccelerationPercent,
+            DecelerationPercent,
+            TimerMode,
+            Time,
+            BucketNumberToLoad,
+            BucketNumberToUnload,
+        )
         if Time < 0:
             raise ValueError("Time must be >= 0")
         self._run_observable(instance)
@@ -150,6 +168,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> StopSpinCycle_Responses:
+        logger.info("MicroplateCentrifugeController.StopSpinCycle called: bucket_number=%s", BucketNumber)
         self._validate_bucket(BucketNumber)
         self._run_observable(instance)
         try:
@@ -163,6 +182,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Reset_Responses:
+        logger.info("MicroplateCentrifugeController.Reset called")
         self._run_observable(instance)
         try:
             self._door_bucket = 0
@@ -176,6 +196,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Home_Responses:
+        logger.info("MicroplateCentrifugeController.Home called")
         self._run_observable(instance)
         try:
             return Home_Responses()
@@ -188,6 +209,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Park_Responses:
+        logger.info("MicroplateCentrifugeController.Park called")
         self._run_observable(instance)
         try:
             return Park_Responses()
@@ -205,6 +227,15 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> LoadPlate_Responses:
+        logger.info(
+            "MicroplateCentrifugeController.LoadPlate called: bucket_number=%s gripper_offset=%s plate_height=%s "
+            "speed=%s options=%s",
+            BucketNumber,
+            GripperOffset,
+            PlateHeight,
+            Speed,
+            Options,
+        )
         self._validate_bucket(BucketNumber)
         self._run_observable(instance)
         try:
@@ -223,6 +254,15 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> UnloadPlate_Responses:
+        logger.info(
+            "MicroplateCentrifugeController.UnloadPlate called: bucket_number=%s gripper_offset=%s plate_height=%s "
+            "speed=%s options=%s",
+            BucketNumber,
+            GripperOffset,
+            PlateHeight,
+            Speed,
+            Options,
+        )
         self._validate_bucket(BucketNumber)
         self._run_observable(instance)
         try:

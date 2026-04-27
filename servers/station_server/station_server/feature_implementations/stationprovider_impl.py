@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 from queue import Queue
 from typing import Optional, TYPE_CHECKING
 
@@ -11,6 +12,9 @@ from ..generated.stationprovider import Reset_Responses, StationProviderBase
 
 if TYPE_CHECKING:
     from ..server import Server
+
+
+logger = logging.getLogger(__name__)
 
 
 class StationProviderImpl(StationProviderBase):
@@ -38,6 +42,8 @@ class StationProviderImpl(StationProviderBase):
         return queue
 
     def Reset(self, *, metadata: MetadataDict, instance: ObservableCommandInstance) -> Reset_Responses:
+        logger.info("StationProvider.Reset called")
+
         # set execution status from `waiting` to `running`
         instance.begin_execution()
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import logging
 from queue import Queue
 import time
 from typing import Optional, TYPE_CHECKING
@@ -12,6 +13,9 @@ from ..generated.trolleyarmprovider import Reset_Responses, SetTrolleyPosition_R
 
 if TYPE_CHECKING:
     from ..server import Server
+
+
+logger = logging.getLogger(__name__)
 
 
 class TrolleyArmProviderImpl(TrolleyArmProviderBase):
@@ -41,6 +45,8 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         return queue
 
     def Reset(self, *, metadata: MetadataDict, instance: ObservableCommandInstance) -> Reset_Responses:
+        logger.info("TrolleyArmProvider.Reset called")
+
         # set execution status from `waiting` to `running`
         instance.begin_execution()
 
@@ -59,6 +65,8 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         return queue
 
     def SetTrolleyPosition(self, Position: int, *, metadata: MetadataDict) -> SetTrolleyPosition_Responses:
+        logger.info("TrolleyArmProvider.SetTrolleyPosition called: position=%s", Position)
+
         if Position < 0:
             raise ValueError("Position must be a natural number (>= 0)")
 

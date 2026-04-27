@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from datetime import timedelta
+import logging
 from queue import Queue
 from typing import TYPE_CHECKING, Optional
 
@@ -18,6 +19,9 @@ from ..generated.automatedplatesealremovercontroller import (
 
 if TYPE_CHECKING:
     from ..server import Server
+
+
+logger = logging.getLogger(__name__)
 
 
 class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControllerBase):
@@ -51,6 +55,11 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Peel_Responses:
+        logger.info(
+            "AutomatedPlateSealRemoverController.Peel called: begin_peel_location=%s adhesion_time=%s",
+            BeginPeelLocation,
+            AdhesionTime,
+        )
         if not (1 <= BeginPeelLocation <= 9):
             raise ValueError("BeginPeelLocation must be in range 1..9")
         if not (1 <= AdhesionTime <= 4):
@@ -73,6 +82,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> GetTapeLeft_Responses:
+        logger.info("AutomatedPlateSealRemoverController.GetTapeLeft called")
         instance.begin_execution()
         warning = "LOW_TAPE" if self._supply_spool_remaining < 25 else ""
         return GetTapeLeft_Responses(
@@ -87,6 +97,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> ResetInstrument_Responses:
+        logger.info("AutomatedPlateSealRemoverController.ResetInstrument called")
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -101,6 +112,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Reset_Responses:
+        logger.info("AutomatedPlateSealRemoverController.Reset called")
         instance.begin_execution()
         self.update_Status(2)
         try:

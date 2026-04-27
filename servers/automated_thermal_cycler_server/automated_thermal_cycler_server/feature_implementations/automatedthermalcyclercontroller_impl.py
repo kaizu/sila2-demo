@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from datetime import timedelta
+import logging
 from queue import Queue
 from typing import TYPE_CHECKING, Optional
 
@@ -22,6 +23,9 @@ from ..generated.automatedthermalcyclercontroller import (
 
 if TYPE_CHECKING:
     from ..server import Server
+
+
+logger = logging.getLogger(__name__)
 
 
 class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase):
@@ -54,6 +58,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         return queue
 
     def GetInstrumentState(self, *, metadata: MetadataDict) -> GetInstrumentState_Responses:
+        logger.info("AutomatedThermalCyclerController.GetInstrumentState called")
         state = 1 if self._run_active else 0
         return GetInstrumentState_Responses(state)
 
@@ -64,6 +69,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Load_Responses:
+        logger.info("AutomatedThermalCyclerController.Load called: protocol_size=%s", len(ProtocolFileData))
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -83,6 +89,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Validate_Responses:
+        logger.info("AutomatedThermalCyclerController.Validate called: max_sample_volume=%s", MaxSampleVolume)
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -102,6 +109,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> OpenLid_Responses:
+        logger.info("AutomatedThermalCyclerController.OpenLid called")
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -116,6 +124,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> CloseLid_Responses:
+        logger.info("AutomatedThermalCyclerController.CloseLid called")
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -130,6 +139,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> StartRun_Responses:
+        logger.info("AutomatedThermalCyclerController.StartRun called")
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -151,6 +161,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> StopRun_Responses:
+        logger.info("AutomatedThermalCyclerController.StopRun called")
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -168,6 +179,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Reset_Responses:
+        logger.info("AutomatedThermalCyclerController.Reset called")
         instance.begin_execution()
         self.update_Status(2)
         try:

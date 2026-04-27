@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from datetime import timedelta
+import logging
 from queue import Queue
 from typing import TYPE_CHECKING, Optional
 
@@ -20,6 +21,9 @@ from ..generated.plateloccontroller import (
 
 if TYPE_CHECKING:
     from ..server import Server
+
+
+logger = logging.getLogger(__name__)
 
 
 class PlateLocControllerImpl(PlateLocControllerBase):
@@ -68,18 +72,21 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         return self._version
 
     def SetSealingTime(self, SealingTime: float, *, metadata: MetadataDict) -> SetSealingTime_Responses:
+        logger.info("PlateLocController.SetSealingTime called: sealing_time=%s", SealingTime)
         if SealingTime <= 0:
             raise ValueError("SealingTime must be > 0")
         self._sealing_time = SealingTime
         return SetSealingTime_Responses()
 
     def SetSealingTemperature(self, SealingTemperature: int, *, metadata: MetadataDict) -> SetSealingTemperature_Responses:
+        logger.info("PlateLocController.SetSealingTemperature called: sealing_temperature=%s", SealingTemperature)
         if SealingTemperature < 0:
             raise ValueError("SealingTemperature must be >= 0")
         self._sealing_temperature = SealingTemperature
         return SetSealingTemperature_Responses()
 
     def EnumerateProfiles(self, *, metadata: MetadataDict) -> EnumerateProfiles_Responses:
+        logger.info("PlateLocController.EnumerateProfiles called")
         return EnumerateProfiles_Responses(self._profiles)
 
     def StartCycle(
@@ -88,6 +95,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> StartCycle_Responses:
+        logger.info("PlateLocController.StartCycle called")
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -104,6 +112,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> StopCycle_Responses:
+        logger.info("PlateLocController.StopCycle called")
         instance.begin_execution()
         self.update_Status(2)
         try:
@@ -119,6 +128,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         metadata: MetadataDict,
         instance: ObservableCommandInstance,
     ) -> Reset_Responses:
+        logger.info("PlateLocController.Reset called")
         instance.begin_execution()
         self.update_Status(2)
         try:
