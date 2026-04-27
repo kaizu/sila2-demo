@@ -1,5 +1,5 @@
 [project]
-name = "laboratory-status"
+name = "laboratory-model"
 version = "0.1.0"
 dependencies = [
     "fastapi",

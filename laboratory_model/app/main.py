@@ -19,25 +19,25 @@ from .models import (
     StateResponse,
     validate_location,
 )
-from .state import LaboratoryStatusError, LaboratoryStatusState
+from .state import LaboratoryModelError, LaboratoryModelState
 
 
 logger = logging.getLogger(__name__)
-state = LaboratoryStatusState()
+state = LaboratoryModelState()
 
 
-class LaboratoryStatusAPIError(Exception):
+class LaboratoryModelAPIError(Exception):
     def __init__(self, status_code: int, payload: dict[str, object]):
         super().__init__(payload["error"]["message"])
         self.status_code = status_code
         self.payload = payload
 
 
-def raise_http_error(error: LaboratoryStatusError) -> None:
+def raise_http_error(error: LaboratoryModelError) -> None:
     status_code = 409
     if error.code in {"invalid_location", "same_source_and_destination"}:
         status_code = 400
-    raise LaboratoryStatusAPIError(
+    raise LaboratoryModelAPIError(
         status_code=status_code,
         payload={"error": {"code": error.code, "message": error.message, "details": error.details}},
     )
@@ -45,7 +45,7 @@ def raise_http_error(error: LaboratoryStatusError) -> None:
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Laboratory Status API",
+        title="Laboratory Model API",
         version="0.1.0",
         responses={
             400: {"model": ErrorResponse},
@@ -68,8 +68,8 @@ def create_app() -> FastAPI:
             },
         )
 
-    @app.exception_handler(LaboratoryStatusAPIError)
-    async def handle_api_error(request: Request, exc: LaboratoryStatusAPIError) -> JSONResponse:
+    @app.exception_handler(LaboratoryModelAPIError)
+    async def handle_api_error(request: Request, exc: LaboratoryModelAPIError) -> JSONResponse:
         logger.info("Rejected request for path=%s with code=%s", request.url.path, exc.payload["error"]["code"])
         return JSONResponse(status_code=exc.status_code, content=exc.payload)
 
@@ -82,7 +82,7 @@ def create_app() -> FastAPI:
         logger.info("Adding item at location=%s", request.location)
         try:
             record = state.add_item(request.location)
-        except LaboratoryStatusError as error:
+        except LaboratoryModelError as error:
             raise_http_error(error)
         return AddItemResponse(location=record.location, occupied=True, item_id=record.item_id)
 
@@ -91,7 +91,7 @@ def create_app() -> FastAPI:
         logger.info("Moving item from source=%s to destination=%s", request.source, request.destination)
         try:
             record = state.move_item(request.source, request.destination)
-        except LaboratoryStatusError as error:
+        except LaboratoryModelError as error:
             raise_http_error(error)
         return MoveItemResponse(source=request.source, destination=request.destination, moved=True, item_id=record.item_id)
 
@@ -100,7 +100,7 @@ def create_app() -> FastAPI:
         logger.info("Removing item at location=%s", request.location)
         try:
             record = state.remove_item(request.location)
-        except LaboratoryStatusError as error:
+        except LaboratoryModelError as error:
             raise_http_error(error)
         return RemoveItemResponse(location=request.location, removed=True, item_id=record.item_id)
 
@@ -112,13 +112,13 @@ def create_app() -> FastAPI:
             return state.get_location(location)
         except ValueError as error:
             raise_http_error(
-                LaboratoryStatusError(
+                LaboratoryModelError(
                     "invalid_location",
                     str(error),
                     {"location": location},
                 )
             )
-        except LaboratoryStatusError as error:
+        except LaboratoryModelError as error:
             raise_http_error(error)
 
     @app.get("/state", response_model=StateResponse)

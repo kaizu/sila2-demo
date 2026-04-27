@@ -48,10 +48,10 @@ def main(
     ca_export_file: Optional[str] = Option(
         None, help="When using a self-signed certificate, write the generated CA to this file"
     ),
-    laboratory_status_url: Optional[str] = Option(
+    laboratory_model_url: Optional[str] = Option(
         None,
-        "--laboratory-status-url",
-        help="Optional laboratory status service base URL",
+        "--laboratory-model-url",
+        help="Optional laboratory model service base URL",
         show_default=False,
     ),
     quiet: bool = Option(False, "--quiet", help="Only log errors"),
@@ -71,8 +71,8 @@ def main(
     private_key = Path(private_key_file).read_bytes() if private_key_file is not None else None
     ca_for_discovery = Path(ca_file_for_discovery).read_bytes() if ca_file_for_discovery is not None else None
     parsed_server_uuid = UUID(server_uuid) if server_uuid is not None else None
-    if laboratory_status_url is not None:
-        os.environ["LABORATORY_STATUS_URL"] = laboratory_status_url
+    if laboratory_model_url is not None:
+        os.environ["LABORATORY_MODEL_URL"] = laboratory_model_url
 
     # logging setup
     initialize_logging(quiet=quiet, verbose=verbose, debug=debug)

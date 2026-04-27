@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from .models import LocationState
 
 
-class LaboratoryStatusError(Exception):
+class LaboratoryModelError(Exception):
     def __init__(self, code: str, message: str, details: dict[str, str | int | bool | None] | None = None):
         super().__init__(message)
         self.code = code
@@ -21,7 +21,7 @@ class ItemRecord:
     location: str
 
 
-class LaboratoryStatusState:
+class LaboratoryModelState:
     def __init__(self) -> None:
         self._lock = Lock()
         self._items_by_location: dict[str, ItemRecord] = {}
@@ -29,7 +29,7 @@ class LaboratoryStatusState:
     def add_item(self, location: str) -> ItemRecord:
         with self._lock:
             if location in self._items_by_location:
-                raise LaboratoryStatusError(
+                raise LaboratoryModelError(
                     "destination_occupied",
                     "An item already exists at the requested location.",
                     {"location": location},
@@ -42,20 +42,20 @@ class LaboratoryStatusState:
     def move_item(self, source: str, destination: str) -> ItemRecord:
         with self._lock:
             if source == destination:
-                raise LaboratoryStatusError(
+                raise LaboratoryModelError(
                     "same_source_and_destination",
                     "Source and destination must be different.",
                     {"source": source, "destination": destination},
                 )
             record = self._items_by_location.get(source)
             if record is None:
-                raise LaboratoryStatusError(
+                raise LaboratoryModelError(
                     "source_empty",
                     "No item exists at the source location.",
                     {"source": source},
                 )
             if destination in self._items_by_location:
-                raise LaboratoryStatusError(
+                raise LaboratoryModelError(
                     "destination_occupied",
                     "An item already exists at the destination location.",
                     {"destination": destination},
@@ -70,7 +70,7 @@ class LaboratoryStatusState:
         with self._lock:
             record = self._items_by_location.get(location)
             if record is None:
-                raise LaboratoryStatusError(
+                raise LaboratoryModelError(
                     "source_empty",
                     "No item exists at the requested location.",
                     {"location": location},
