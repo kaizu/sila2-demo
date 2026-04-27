@@ -5,6 +5,7 @@ import argparse
 from common import (
     DEFAULT_LABORATORY_MODEL_URL,
     add_item_to_location,
+    expect_laboratory_model_error,
     get_laboratory_model_health,
     get_location_state,
     lock_location,
@@ -72,6 +73,16 @@ def main() -> int:
     if source_after_lock.get("accessible") is not False:
         raise RuntimeError(f"Expected locked source location: {source_after_lock}")
 
+    add_locked_status, add_locked_error = expect_laboratory_model_error(
+        laboratory_model_url=args.laboratory_model_url,
+        path="/items/add",
+        method="POST",
+        payload={"location": args.source_location},
+    )
+    print(f"Add while locked error: status={add_locked_status} body={add_locked_error}")
+    if add_locked_status != 409 or add_locked_error["error"]["code"] != "location_locked":
+        raise RuntimeError(f"Unexpected add-while-locked error: {add_locked_status}, {add_locked_error}")
+
     unlocked_source = unlock_location(
         laboratory_model_url=args.laboratory_model_url,
         location=args.source_location,
@@ -137,6 +148,16 @@ def main() -> int:
     if destination_after_lock.get("item_id") != item_id or destination_after_lock.get("accessible") is not False:
         raise RuntimeError(f"Expected locked destination location with item present: {destination_after_lock}")
 
+    remove_locked_status, remove_locked_error = expect_laboratory_model_error(
+        laboratory_model_url=args.laboratory_model_url,
+        path="/items/remove",
+        method="DELETE",
+        payload={"location": args.destination_location},
+    )
+    print(f"Remove while locked error: status={remove_locked_status} body={remove_locked_error}")
+    if remove_locked_status != 409 or remove_locked_error["error"]["code"] != "location_locked":
+        raise RuntimeError(f"Unexpected remove-while-locked error: {remove_locked_status}, {remove_locked_error}")
+
     unlocked_destination = unlock_location(
         laboratory_model_url=args.laboratory_model_url,
         location=args.destination_location,
@@ -144,6 +165,26 @@ def main() -> int:
     print(f"Unlocked destination: {unlocked_destination}")
     if unlocked_destination.get("accessible") is not True:
         raise RuntimeError(f"Unexpected destination unlock response: {unlocked_destination}")
+
+    lock_location(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.destination_location,
+    )
+    move_locked_status, move_locked_error = expect_laboratory_model_error(
+        laboratory_model_url=args.laboratory_model_url,
+        path="/items/move",
+        method="POST",
+        payload={"source": args.source_location, "destination": args.destination_location},
+    )
+    print(f"Move to locked destination error: status={move_locked_status} body={move_locked_error}")
+    if move_locked_status != 409 or move_locked_error["error"]["code"] != "destination_locked":
+        raise RuntimeError(
+            f"Unexpected move-to-locked-destination error: {move_locked_status}, {move_locked_error}"
+        )
+    unlock_location(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.destination_location,
+    )
 
     removed_item = remove_item_from_location(
         laboratory_model_url=args.laboratory_model_url,

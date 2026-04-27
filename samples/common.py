@@ -4,6 +4,7 @@ import argparse
 import json
 import time
 from typing import Any
+from urllib.error import HTTPError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
@@ -59,6 +60,32 @@ def request_laboratory_model(
     )
     with urlopen(request, timeout=2.0) as response:
         return json.load(response)
+
+
+def expect_laboratory_model_error(
+    *,
+    laboratory_model_url: str,
+    path: str,
+    method: str,
+    payload: dict[str, Any] | None = None,
+) -> tuple[int, dict[str, Any]]:
+    request_data = None
+    headers: dict[str, str] = {}
+    if payload is not None:
+        request_data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+
+    request = Request(
+        f"{laboratory_model_url.rstrip('/')}/{path.lstrip('/')}",
+        data=request_data,
+        headers=headers,
+        method=method,
+    )
+    try:
+        with urlopen(request, timeout=2.0) as response:
+            raise RuntimeError(f"Expected laboratory model error but request succeeded: {response.status}")
+    except HTTPError as error:
+        return error.code, json.load(error)
 
 
 def get_laboratory_model_health(*, laboratory_model_url: str) -> dict[str, Any]:

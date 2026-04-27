@@ -34,8 +34,21 @@ class LaboratoryModelState:
     def _get_accessibility(self, location: str) -> bool:
         return self._accessibility_by_location.get(location, True)
 
+    def _require_accessible(self, *, location: str, error_code: str, error_message: str) -> None:
+        if self._get_accessibility(location) is False:
+            raise LaboratoryModelError(
+                error_code,
+                error_message,
+                {"location": location},
+            )
+
     def add_item(self, location: str) -> ItemRecord:
         with self._lock:
+            self._require_accessible(
+                location=location,
+                error_code="location_locked",
+                error_message="The requested location is locked.",
+            )
             if location in self._items_by_location:
                 raise LaboratoryModelError(
                     "destination_occupied",
@@ -56,6 +69,16 @@ class LaboratoryModelState:
                     "Source and destination must be different.",
                     {"source": source, "destination": destination},
                 )
+            self._require_accessible(
+                location=source,
+                error_code="source_locked",
+                error_message="The source location is locked.",
+            )
+            self._require_accessible(
+                location=destination,
+                error_code="destination_locked",
+                error_message="The destination location is locked.",
+            )
             record = self._items_by_location.get(source)
             if record is None:
                 raise LaboratoryModelError(
@@ -79,6 +102,11 @@ class LaboratoryModelState:
 
     def remove_item(self, location: str) -> ItemRecord:
         with self._lock:
+            self._require_accessible(
+                location=location,
+                error_code="location_locked",
+                error_message="The requested location is locked.",
+            )
             record = self._items_by_location.get(location)
             if record is None:
                 raise LaboratoryModelError(
