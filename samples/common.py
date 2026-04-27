@@ -38,20 +38,67 @@ def connect(host: str, port: int, *, insecure: bool) -> SilaClient:
     return SilaClient(host, port, insecure=insecure)
 
 
-def ensure_item_at_location(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
-    reset_request = Request(f"{laboratory_model_url.rstrip('/')}/reset", method="POST")
-    with urlopen(reset_request, timeout=2.0):
-        pass
+def request_laboratory_model(
+    *,
+    laboratory_model_url: str,
+    path: str,
+    method: str = "GET",
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    request_data = None
+    headers: dict[str, str] = {}
+    if payload is not None:
+        request_data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
 
-    payload = json.dumps({"location": location}).encode("utf-8")
-    add_request = Request(
-        f"{laboratory_model_url.rstrip('/')}/items/add",
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
+    request = Request(
+        f"{laboratory_model_url.rstrip('/')}/{path.lstrip('/')}",
+        data=request_data,
+        headers=headers,
+        method=method,
     )
-    with urlopen(add_request, timeout=2.0) as response:
+    with urlopen(request, timeout=2.0) as response:
         return json.load(response)
+
+
+def get_laboratory_model_health(*, laboratory_model_url: str) -> dict[str, Any]:
+    return request_laboratory_model(laboratory_model_url=laboratory_model_url, path="/health")
+
+
+def reset_laboratory_model(*, laboratory_model_url: str) -> dict[str, Any]:
+    return request_laboratory_model(laboratory_model_url=laboratory_model_url, path="/reset", method="POST")
+
+
+def add_item_to_location(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
+    return request_laboratory_model(
+        laboratory_model_url=laboratory_model_url,
+        path="/items/add",
+        method="POST",
+        payload={"location": location},
+    )
+
+
+def move_item_between_locations(*, laboratory_model_url: str, source: str, destination: str) -> dict[str, Any]:
+    return request_laboratory_model(
+        laboratory_model_url=laboratory_model_url,
+        path="/items/move",
+        method="POST",
+        payload={"source": source, "destination": destination},
+    )
+
+
+def remove_item_from_location(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
+    return request_laboratory_model(
+        laboratory_model_url=laboratory_model_url,
+        path="/items/remove",
+        method="DELETE",
+        payload={"location": location},
+    )
+
+
+def ensure_item_at_location(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
+    reset_laboratory_model(laboratory_model_url=laboratory_model_url)
+    return add_item_to_location(laboratory_model_url=laboratory_model_url, location=location)
 
 
 def get_location_state(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
