@@ -2,57 +2,78 @@ x-sila2-server: &sila2-server
   build:
     context: ./servers/station_server
     dockerfile: Dockerfile
+  depends_on:
+    - laboratory_status
   environment:
     - PYTHONUNBUFFERED=1
     - SILA_SERVER_TYPE=StationServer
-  command: ["python", "-m", "station_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
+  command: ["python", "-m", "station_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-status-url", "http://laboratory_status:8001"]
 
 x-trolley-arm-server: &trolley-arm-server
   build:
     context: ./servers/trolley_arm_server
     dockerfile: Dockerfile
+  depends_on:
+    - laboratory_status
   environment:
     - PYTHONUNBUFFERED=1
     - SILA_SERVER_TYPE=TrolleyArmServer
-  command: ["python", "-m", "trolley_arm_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
+  command: ["python", "-m", "trolley_arm_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-status-url", "http://laboratory_status:8001"]
 
 x-microplate-centrifuge-server: &microplate-centrifuge-server
   build:
     context: ./servers/microplate_centrifuge_server
     dockerfile: Dockerfile
+  depends_on:
+    - laboratory_status
   environment:
     - PYTHONUNBUFFERED=1
     - SILA_SERVER_TYPE=MicroplateCentrifugeServer
-  command: ["python", "-m", "microplate_centrifuge_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
+  command: ["python", "-m", "microplate_centrifuge_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-status-url", "http://laboratory_status:8001"]
 
 x-plateloc-server: &plateloc-server
   build:
     context: ./servers/plateloc_server
     dockerfile: Dockerfile
+  depends_on:
+    - laboratory_status
   environment:
     - PYTHONUNBUFFERED=1
     - SILA_SERVER_TYPE=PlateLocServer
-  command: ["python", "-m", "plateloc_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
+  command: ["python", "-m", "plateloc_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-status-url", "http://laboratory_status:8001"]
 
 x-plate-seal-remover-server: &plate-seal-remover-server
   build:
     context: ./servers/automated_plate_seal_remover_server
     dockerfile: Dockerfile
+  depends_on:
+    - laboratory_status
   environment:
     - PYTHONUNBUFFERED=1
     - SILA_SERVER_TYPE=AutomatedPlateSealRemoverServer
-  command: ["python", "-m", "automated_plate_seal_remover_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
+  command: ["python", "-m", "automated_plate_seal_remover_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-status-url", "http://laboratory_status:8001"]
 
 x-thermal-cycler-server: &thermal-cycler-server
   build:
     context: ./servers/automated_thermal_cycler_server
     dockerfile: Dockerfile
+  depends_on:
+    - laboratory_status
   environment:
     - PYTHONUNBUFFERED=1
     - SILA_SERVER_TYPE=AutomatedThermalCyclerServer
-  command: ["python", "-m", "automated_thermal_cycler_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
+  command: ["python", "-m", "automated_thermal_cycler_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-status-url", "http://laboratory_status:8001"]
 
 services:
+  laboratory_status:
+    build:
+      context: ./laboratory_status
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONUNBUFFERED=1
+
   sila2-server-1:
     <<: *microplate-centrifuge-server
     ports:
@@ -99,8 +120,11 @@ services:
     build:
       context: ./fastapi_app
       dockerfile: Dockerfile
+    depends_on:
+      - laboratory_status
     ports:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
+      - LABORATORY_STATUS_URL=http://laboratory_status:8001
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

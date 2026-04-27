@@ -1,0 +1,1 @@
+"""Laboratory status service package."""
