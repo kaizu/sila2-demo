@@ -100,7 +100,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return OpenDoor_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def CloseDoor(
         self,
@@ -114,7 +113,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return CloseDoor_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def SpinCycle(
         self,
@@ -144,7 +142,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return SpinCycle_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def StopSpinCycle(
         self,
@@ -159,7 +156,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return StopSpinCycle_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def Reset(
         self,
@@ -173,7 +169,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return Reset_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def Home(
         self,
@@ -186,7 +181,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return Home_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def Park(
         self,
@@ -199,7 +193,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return Park_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def LoadPlate(
         self,
@@ -218,7 +211,6 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return LoadPlate_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def UnloadPlate(
         self,
@@ -237,4 +229,3 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             return UnloadPlate_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()

@@ -75,7 +75,6 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             return Load_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def Validate(
         self,
@@ -96,7 +95,6 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             return Validate_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def OpenLid(
         self,
@@ -111,7 +109,6 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             return OpenLid_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def CloseLid(
         self,
@@ -126,7 +123,6 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             return CloseLid_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def StartRun(
         self,
@@ -144,9 +140,10 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self.update_RemainingTime("00:02:00")
             time.sleep(0.05)
             return StartRun_Responses()
-        finally:
+        except Exception:
+            self._run_active = False
             self.update_Status(1)
-            instance.complete()
+            raise
 
     def StopRun(
         self,
@@ -164,7 +161,6 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             return StopRun_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def Reset(
         self,
@@ -184,4 +180,3 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             return Reset_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()

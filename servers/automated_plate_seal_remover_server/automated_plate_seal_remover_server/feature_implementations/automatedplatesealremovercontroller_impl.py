@@ -66,7 +66,6 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
             return Peel_Responses(warning)
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def GetTapeLeft(
         self,
@@ -75,15 +74,12 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         instance: ObservableCommandInstance,
     ) -> GetTapeLeft_Responses:
         instance.begin_execution()
-        try:
-            warning = "LOW_TAPE" if self._supply_spool_remaining < 25 else ""
-            return GetTapeLeft_Responses(
-                self._supply_spool_remaining,
-                self._takeup_spool_remaining,
-                warning,
-            )
-        finally:
-            instance.complete()
+        warning = "LOW_TAPE" if self._supply_spool_remaining < 25 else ""
+        return GetTapeLeft_Responses(
+            self._supply_spool_remaining,
+            self._takeup_spool_remaining,
+            warning,
+        )
 
     def ResetInstrument(
         self,
@@ -98,7 +94,6 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
             return ResetInstrument_Responses("")
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def Reset(
         self,
@@ -115,4 +110,3 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
             return Reset_Responses("")
         finally:
             self.update_Status(1)
-            instance.complete()

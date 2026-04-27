@@ -47,7 +47,6 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         # Reset brings the station back to Idle.
         self.update_Status(1)
 
-        instance.complete()
         return Reset_Responses()
 
     def TrolleyPosition_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:

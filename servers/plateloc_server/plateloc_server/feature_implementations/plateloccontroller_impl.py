@@ -71,14 +71,12 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         if SealingTime <= 0:
             raise ValueError("SealingTime must be > 0")
         self._sealing_time = SealingTime
-        self.update_SealingTime(self._sealing_time)
         return SetSealingTime_Responses()
 
     def SetSealingTemperature(self, SealingTemperature: int, *, metadata: MetadataDict) -> SetSealingTemperature_Responses:
         if SealingTemperature < 0:
             raise ValueError("SealingTemperature must be >= 0")
         self._sealing_temperature = SealingTemperature
-        self.update_SealingTemperature(self._sealing_temperature)
         return SetSealingTemperature_Responses()
 
     def EnumerateProfiles(self, *, metadata: MetadataDict) -> EnumerateProfiles_Responses:
@@ -94,14 +92,11 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         self.update_Status(2)
         try:
             self._actual_temperature = self._sealing_temperature
-            self.update_ActualTemperature(self._actual_temperature)
             time.sleep(0.05)
             self._cycle_count += 1
-            self.update_CycleCount(self._cycle_count)
             return StartCycle_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def StopCycle(
         self,
@@ -113,12 +108,10 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         self.update_Status(2)
         try:
             self._actual_temperature = max(25, self._actual_temperature - 5)
-            self.update_ActualTemperature(self._actual_temperature)
             time.sleep(0.05)
             return StopCycle_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()
 
     def Reset(
         self,
@@ -133,12 +126,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
             self._sealing_time = 1.5
             self._actual_temperature = 25
             self._cycle_count = 0
-            self.update_SealingTemperature(self._sealing_temperature)
-            self.update_SealingTime(self._sealing_time)
-            self.update_ActualTemperature(self._actual_temperature)
-            self.update_CycleCount(self._cycle_count)
             time.sleep(0.05)
             return Reset_Responses()
         finally:
             self.update_Status(1)
-            instance.complete()

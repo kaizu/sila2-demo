@@ -44,5 +44,4 @@ class StationProviderImpl(StationProviderBase):
         # Reset brings the station back to Idle.
         self.update_Status(1)
 
-        instance.complete()
         return Reset_Responses()
