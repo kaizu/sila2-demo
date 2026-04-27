@@ -96,6 +96,24 @@ def remove_item_from_location(*, laboratory_model_url: str, location: str) -> di
     )
 
 
+def lock_location(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
+    return request_laboratory_model(
+        laboratory_model_url=laboratory_model_url,
+        path="/locations/lock",
+        method="POST",
+        payload={"location": location},
+    )
+
+
+def unlock_location(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
+    return request_laboratory_model(
+        laboratory_model_url=laboratory_model_url,
+        path="/locations/unlock",
+        method="POST",
+        payload={"location": location},
+    )
+
+
 def ensure_item_at_location(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
     reset_laboratory_model(laboratory_model_url=laboratory_model_url)
     return add_item_to_location(laboratory_model_url=laboratory_model_url, location=location)

@@ -47,12 +47,22 @@ class RemoveItemRequest(BaseModel):
         return validate_location(value)
 
 
+class LocationControlRequest(BaseModel):
+    location: str = Field(..., description="Location to lock or unlock")
+
+    @field_validator("location")
+    @classmethod
+    def _validate_location(cls, value: str) -> str:
+        return validate_location(value)
+
+
 class LocationState(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     location: str
     occupied: bool
     item_id: UUID | None
+    accessible: bool
 
 
 class AddItemResponse(LocationState):
@@ -78,6 +88,11 @@ class StateResponse(BaseModel):
 
 class ResetResponse(BaseModel):
     cleared: bool
+
+
+class LocationControlResponse(BaseModel):
+    location: str
+    accessible: bool
 
 
 class ErrorDetail(BaseModel):

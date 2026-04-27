@@ -7,9 +7,11 @@ from common import (
     add_item_to_location,
     get_laboratory_model_health,
     get_location_state,
+    lock_location,
     move_item_between_locations,
     remove_item_from_location,
     reset_laboratory_model,
+    unlock_location,
 )
 
 
@@ -51,8 +53,32 @@ def main() -> int:
         location=args.source_location,
     )
     print(f"Source before add: {source_before}")
-    if source_before.get("occupied") is not False:
+    if source_before.get("occupied") is not False or source_before.get("accessible") is not True:
         raise RuntimeError(f"Expected empty source location before add: {source_before}")
+
+    locked_source = lock_location(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.source_location,
+    )
+    print(f"Locked source: {locked_source}")
+    if locked_source.get("accessible") is not False:
+        raise RuntimeError(f"Unexpected lock response: {locked_source}")
+
+    source_after_lock = get_location_state(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.source_location,
+    )
+    print(f"Source after lock: {source_after_lock}")
+    if source_after_lock.get("accessible") is not False:
+        raise RuntimeError(f"Expected locked source location: {source_after_lock}")
+
+    unlocked_source = unlock_location(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.source_location,
+    )
+    print(f"Unlocked source: {unlocked_source}")
+    if unlocked_source.get("accessible") is not True:
+        raise RuntimeError(f"Unexpected unlock response: {unlocked_source}")
 
     added_item = add_item_to_location(
         laboratory_model_url=args.laboratory_model_url,
@@ -68,7 +94,7 @@ def main() -> int:
         location=args.source_location,
     )
     print(f"Source after add: {source_after_add}")
-    if source_after_add.get("item_id") != item_id:
+    if source_after_add.get("item_id") != item_id or source_after_add.get("accessible") is not True:
         raise RuntimeError(f"Added item was not found at source location: {source_after_add}")
 
     moved_item = move_item_between_locations(
@@ -92,8 +118,32 @@ def main() -> int:
     print(f"Destination after move: {destination_after_move}")
     if source_after_move.get("occupied") is not False:
         raise RuntimeError(f"Expected empty source location after move: {source_after_move}")
-    if destination_after_move.get("item_id") != item_id:
+    if destination_after_move.get("item_id") != item_id or destination_after_move.get("accessible") is not True:
         raise RuntimeError(f"Moved item was not found at destination location: {destination_after_move}")
+
+    locked_destination = lock_location(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.destination_location,
+    )
+    print(f"Locked destination: {locked_destination}")
+    if locked_destination.get("accessible") is not False:
+        raise RuntimeError(f"Unexpected destination lock response: {locked_destination}")
+
+    destination_after_lock = get_location_state(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.destination_location,
+    )
+    print(f"Destination after lock: {destination_after_lock}")
+    if destination_after_lock.get("item_id") != item_id or destination_after_lock.get("accessible") is not False:
+        raise RuntimeError(f"Expected locked destination location with item present: {destination_after_lock}")
+
+    unlocked_destination = unlock_location(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.destination_location,
+    )
+    print(f"Unlocked destination: {unlocked_destination}")
+    if unlocked_destination.get("accessible") is not True:
+        raise RuntimeError(f"Unexpected destination unlock response: {unlocked_destination}")
 
     removed_item = remove_item_from_location(
         laboratory_model_url=args.laboratory_model_url,
@@ -108,7 +158,7 @@ def main() -> int:
         location=args.destination_location,
     )
     print(f"Destination after remove: {destination_after_remove}")
-    if destination_after_remove.get("occupied") is not False:
+    if destination_after_remove.get("occupied") is not False or destination_after_remove.get("accessible") is not True:
         raise RuntimeError(f"Expected empty destination location after remove: {destination_after_remove}")
 
     reset_after_test = reset_laboratory_model(laboratory_model_url=args.laboratory_model_url)

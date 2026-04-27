@@ -10,6 +10,8 @@ from .models import (
     AddItemRequest,
     AddItemResponse,
     ErrorResponse,
+    LocationControlRequest,
+    LocationControlResponse,
     LocationState,
     MoveItemRequest,
     MoveItemResponse,
@@ -84,7 +86,8 @@ def create_app() -> FastAPI:
             record = state.add_item(request.location)
         except LaboratoryModelError as error:
             raise_http_error(error)
-        return AddItemResponse(location=record.location, occupied=True, item_id=record.item_id)
+        location_state = state.get_location(record.location)
+        return AddItemResponse(**location_state.model_dump())
 
     @app.post("/items/move", response_model=MoveItemResponse)
     def move_item(request: MoveItemRequest) -> MoveItemResponse:
@@ -103,6 +106,24 @@ def create_app() -> FastAPI:
         except LaboratoryModelError as error:
             raise_http_error(error)
         return RemoveItemResponse(location=request.location, removed=True, item_id=record.item_id)
+
+    @app.post("/locations/lock", response_model=LocationControlResponse)
+    def lock_location(request: LocationControlRequest) -> LocationControlResponse:
+        logger.info("Locking location=%s", request.location)
+        try:
+            location_state = state.lock_location(request.location)
+        except LaboratoryModelError as error:
+            raise_http_error(error)
+        return LocationControlResponse(location=location_state.location, accessible=location_state.accessible)
+
+    @app.post("/locations/unlock", response_model=LocationControlResponse)
+    def unlock_location(request: LocationControlRequest) -> LocationControlResponse:
+        logger.info("Unlocking location=%s", request.location)
+        try:
+            location_state = state.unlock_location(request.location)
+        except LaboratoryModelError as error:
+            raise_http_error(error)
+        return LocationControlResponse(location=location_state.location, accessible=location_state.accessible)
 
     @app.get("/locations/{location}", response_model=LocationState)
     def get_location(location: str) -> LocationState:
