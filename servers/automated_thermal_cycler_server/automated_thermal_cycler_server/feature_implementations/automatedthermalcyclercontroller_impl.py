@@ -115,6 +115,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         self.update_Status(2)
         try:
             time.sleep(0.05)
+            self._server.unlock_location(command_name="AutomatedThermalCyclerController.OpenLid")
             return OpenLid_Responses()
         finally:
             self.update_Status(1)
@@ -130,6 +131,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         self.update_Status(2)
         try:
             time.sleep(0.05)
+            self._server.lock_location(command_name="AutomatedThermalCyclerController.CloseLid")
             return CloseLid_Responses()
         finally:
             self.update_Status(1)

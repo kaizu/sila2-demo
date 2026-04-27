@@ -104,6 +104,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         self._run_observable(instance)
         try:
             self._door_bucket = BucketNumber
+            self._server.unlock_location(command_name="MicroplateCentrifugeController.OpenDoor")
             return OpenDoor_Responses()
         finally:
             self.update_Status(1)
@@ -118,6 +119,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         self._run_observable(instance)
         try:
             self._door_bucket = 0
+            self._server.lock_location(command_name="MicroplateCentrifugeController.CloseDoor")
             return CloseDoor_Responses()
         finally:
             self.update_Status(1)

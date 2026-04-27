@@ -6,7 +6,7 @@ import os
 from typing import Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
@@ -68,3 +68,30 @@ class Server(SilaServer):
                 f"{command_name} requires an item at location '{self.laboratory_model_location}', "
                 "but no item is present"
             )
+
+    def _set_location_accessibility(self, *, command_name: str, accessible: bool) -> None:
+        if not self.laboratory_model_url or not self.laboratory_model_location:
+            logger.info("%s skipped laboratory model accessibility update because configuration is missing", command_name)
+            return
+
+        endpoint = "/locations/unlock" if accessible else "/locations/lock"
+        payload = json.dumps({"location": self.laboratory_model_location}).encode("utf-8")
+        request = Request(
+            f"{self.laboratory_model_url.rstrip('/')}{endpoint}",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=2.0):
+                return
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+            raise RuntimeError(
+                f"{command_name} failed to update access state for location '{self.laboratory_model_location}': {error}"
+            ) from error
+
+    def unlock_location(self, *, command_name: str) -> None:
+        self._set_location_accessibility(command_name=command_name, accessible=True)
+
+    def lock_location(self, *, command_name: str) -> None:
+        self._set_location_accessibility(command_name=command_name, accessible=False)

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from threading import Lock
 from uuid import UUID, uuid4
 
 from .models import LocationState
+
+
+logger = logging.getLogger(__name__)
 
 
 class LaboratoryModelError(Exception):
@@ -105,6 +109,8 @@ class LaboratoryModelState:
 
     def lock_location(self, location: str) -> LocationState:
         with self._lock:
+            if self._get_accessibility(location) is False:
+                logger.info("Location %s is already locked", location)
             self._accessibility_by_location[location] = False
             record = self._items_by_location.get(location)
             return LocationState(
@@ -116,6 +122,8 @@ class LaboratoryModelState:
 
     def unlock_location(self, location: str) -> LocationState:
         with self._lock:
+            if self._get_accessibility(location) is True:
+                logger.info("Location %s is already unlocked", location)
             self._accessibility_by_location[location] = True
             record = self._items_by_location.get(location)
             return LocationState(
