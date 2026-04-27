@@ -54,6 +54,12 @@ def main(
         help="Optional laboratory model service base URL",
         show_default=False,
     ),
+    laboratory_model_location: Optional[str] = Option(
+        None,
+        "--laboratory-model-location",
+        help="Optional laboratory model location handled by this server",
+        show_default=False,
+    ),
     quiet: bool = Option(False, "--quiet", help="Only log errors"),
     verbose: bool = Option(False, "--verbose", help="Enable verbose logging"),
     debug: bool = Option(False, "--debug", help="Enable debug logging"),
@@ -73,6 +79,13 @@ def main(
     parsed_server_uuid = UUID(server_uuid) if server_uuid is not None else None
     if laboratory_model_url is not None:
         os.environ["LABORATORY_MODEL_URL"] = laboratory_model_url
+    if laboratory_model_location is not None:
+        normalized_laboratory_model_location = laboratory_model_location.strip()
+        if not normalized_laboratory_model_location:
+            raise BadParameter("--laboratory-model-location must not be empty")
+        if normalized_laboratory_model_location != laboratory_model_location:
+            raise BadParameter("--laboratory-model-location must not contain leading or trailing whitespace")
+        os.environ["LABORATORY_MODEL_LOCATION"] = normalized_laboratory_model_location
 
     # logging setup
     initialize_logging(quiet=quiet, verbose=verbose, debug=debug)

@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 class PlateLocControllerImpl(PlateLocControllerBase):
     def __init__(self, parent_server: Server) -> None:
         super().__init__(parent_server=parent_server)
+        self._server = parent_server
 
         self.StartCycle_default_lifetime_of_execution = timedelta(minutes=30)
         self.StopCycle_default_lifetime_of_execution = timedelta(minutes=30)
@@ -96,6 +97,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         instance: ObservableCommandInstance,
     ) -> StartCycle_Responses:
         logger.info("PlateLocController.StartCycle called")
+        self._server.require_item_at_location(command_name="PlateLocController.StartCycle")
         instance.begin_execution()
         self.update_Status(2)
         try:

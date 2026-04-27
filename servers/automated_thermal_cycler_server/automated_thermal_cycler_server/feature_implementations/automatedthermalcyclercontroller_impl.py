@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase):
     def __init__(self, parent_server: Server) -> None:
         super().__init__(parent_server=parent_server)
+        self._server = parent_server
 
         self.Load_default_lifetime_of_execution = timedelta(minutes=30)
         self.Validate_default_lifetime_of_execution = timedelta(minutes=30)
@@ -140,6 +141,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         instance: ObservableCommandInstance,
     ) -> StartRun_Responses:
         logger.info("AutomatedThermalCyclerController.StartRun called")
+        self._server.require_item_at_location(command_name="AutomatedThermalCyclerController.StartRun")
         instance.begin_execution()
         self.update_Status(2)
         try:

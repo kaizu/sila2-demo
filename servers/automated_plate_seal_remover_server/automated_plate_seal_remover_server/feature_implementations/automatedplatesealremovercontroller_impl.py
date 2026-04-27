@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControllerBase):
     def __init__(self, parent_server: Server) -> None:
         super().__init__(parent_server=parent_server)
+        self._server = parent_server
 
         self.Peel_default_lifetime_of_execution = timedelta(minutes=30)
         self.GetTapeLeft_default_lifetime_of_execution = timedelta(minutes=30)
@@ -64,6 +65,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
             raise ValueError("BeginPeelLocation must be in range 1..9")
         if not (1 <= AdhesionTime <= 4):
             raise ValueError("AdhesionTime must be in range 1..4")
+        self._server.require_item_at_location(command_name="AutomatedPlateSealRemoverController.Peel")
 
         instance.begin_execution()
         self.update_Status(2)

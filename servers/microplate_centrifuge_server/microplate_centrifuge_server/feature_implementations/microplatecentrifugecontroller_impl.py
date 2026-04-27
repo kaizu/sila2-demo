@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
     def __init__(self, parent_server: Server) -> None:
         super().__init__(parent_server=parent_server)
+        self._server = parent_server
 
         self.OpenDoor_default_lifetime_of_execution = timedelta(minutes=30)
         self.CloseDoor_default_lifetime_of_execution = timedelta(minutes=30)
@@ -155,6 +156,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         )
         if Time < 0:
             raise ValueError("Time must be >= 0")
+        self._server.require_item_at_location(command_name="MicroplateCentrifugeController.SpinCycle")
         self._run_observable(instance)
         try:
             return SpinCycle_Responses()

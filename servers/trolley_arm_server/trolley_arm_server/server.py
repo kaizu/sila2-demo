@@ -19,6 +19,8 @@ class Server(SilaServer):
     ):
         env_name = os.getenv("SILA_SERVER_NAME")
         env_type = os.getenv("SILA_SERVER_TYPE")
+        self.laboratory_model_url = os.getenv("LABORATORY_MODEL_URL")
+        self.laboratory_model_location = os.getenv("LABORATORY_MODEL_LOCATION")
 
         if name is None:
             name = env_name if env_name else "TrolleyArmServer"

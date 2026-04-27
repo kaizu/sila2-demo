@@ -1,14 +1,38 @@
 from __future__ import annotations
 
-from common import build_parser, connect, print_server_identity, wait_for_observable
+from common import (
+    DEFAULT_LABORATORY_MODEL_URL,
+    build_parser,
+    connect,
+    ensure_item_at_location,
+    print_server_identity,
+    wait_for_observable,
+)
 
 
 DEFAULT_PORT = 50054
+DEFAULT_LOCATION = "seal-remover:1"
 
 
 def main() -> int:
     parser = build_parser("Smoke test the Automated Plate Seal Remover SiLA2 server directly.", DEFAULT_PORT)
+    parser.add_argument(
+        "--laboratory-model-url",
+        default=DEFAULT_LABORATORY_MODEL_URL,
+        help="Laboratory model base URL used to seed required test items",
+    )
+    parser.add_argument(
+        "--laboratory-model-location",
+        default=DEFAULT_LOCATION,
+        help="Laboratory model location required by the seal remover server",
+    )
     args = parser.parse_args()
+
+    seeded_item = ensure_item_at_location(
+        laboratory_model_url=args.laboratory_model_url,
+        location=args.laboratory_model_location,
+    )
+    print(f"Seeded laboratory model item: {seeded_item}")
 
     with connect(args.host, args.port, insecure=args.insecure) as client:
         print_server_identity(client, host=args.host, port=args.port)
