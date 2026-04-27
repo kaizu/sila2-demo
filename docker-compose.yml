@@ -73,6 +73,9 @@ services:
       - "8001:8001"
     environment:
       - PYTHONUNBUFFERED=1
+      - LABORATORY_MODEL_INITIAL_STATE_FILE=/app/config/initial_state.json
+    volumes:
+      - ./config/laboratory_model.initial_state.json:/app/config/initial_state.json:ro
 
   sila2-server-1:
     <<: *microplate-centrifuge-server

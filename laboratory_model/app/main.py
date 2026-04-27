@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from .initial_state import load_initial_state
 from .models import (
     AddItemRequest,
     AddItemResponse,
@@ -54,6 +56,16 @@ def create_app() -> FastAPI:
             409: {"model": ErrorResponse},
         },
     )
+
+    @app.on_event("startup")
+    async def initialize_state_from_file() -> None:
+        file_path = os.getenv("LABORATORY_MODEL_INITIAL_STATE_FILE")
+        if not file_path:
+            logger.info("Starting laboratory model with empty initial state")
+            state.reset()
+            return
+
+        load_initial_state(state=state, file_path=file_path)
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
