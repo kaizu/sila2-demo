@@ -8,6 +8,10 @@ package sila2.org.silastandard.examples.trolleyarmprovider.v1;
 service TrolleyArmProvider {
   /* Set trolley position on the rail as a natural number (0 or greater). */
   rpc SetTrolleyPosition (sila2.org.silastandard.examples.trolleyarmprovider.v1.SetTrolleyPosition_Parameters) returns (sila2.org.silastandard.examples.trolleyarmprovider.v1.SetTrolleyPosition_Responses) {}
+  /* Pick up the labware from the specified location. */
+  rpc Pick (sila2.org.silastandard.examples.trolleyarmprovider.v1.Pick_Parameters) returns (sila2.org.silastandard.examples.trolleyarmprovider.v1.Pick_Responses) {}
+  /* Place the currently held labware at the specified location. */
+  rpc Place (sila2.org.silastandard.examples.trolleyarmprovider.v1.Place_Parameters) returns (sila2.org.silastandard.examples.trolleyarmprovider.v1.Place_Responses) {}
   /* Reset the server. Raises an error if the reset fails. */
   rpc Reset (sila2.org.silastandard.examples.trolleyarmprovider.v1.Reset_Parameters) returns (sila2.org.silastandard.CommandConfirmation) {}
   /* Monitor the state of Reset */
@@ -27,6 +31,24 @@ message SetTrolleyPosition_Parameters {
 
 /* Responses of SetTrolleyPosition */
 message SetTrolleyPosition_Responses {
+}
+
+/* Parameters for Pick */
+message Pick_Parameters {
+  sila2.org.silastandard.String LocationSpecifier = 1;  /* String that specifies the target location. */
+}
+
+/* Responses of Pick */
+message Pick_Responses {
+}
+
+/* Parameters for Place */
+message Place_Parameters {
+  sila2.org.silastandard.String LocationSpecifier = 1;  /* String that specifies the target location. */
+}
+
+/* Responses of Place */
+message Place_Responses {
 }
 
 /* Parameters for Reset */

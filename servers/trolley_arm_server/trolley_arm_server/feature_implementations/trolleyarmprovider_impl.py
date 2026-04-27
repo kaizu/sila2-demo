@@ -9,7 +9,13 @@ from typing import Optional, TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
-from ..generated.trolleyarmprovider import Reset_Responses, SetTrolleyPosition_Responses, TrolleyArmProviderBase
+from ..generated.trolleyarmprovider import (
+    Pick_Responses,
+    Place_Responses,
+    Reset_Responses,
+    SetTrolleyPosition_Responses,
+    TrolleyArmProviderBase,
+)
 
 if TYPE_CHECKING:
     from ..server import Server
@@ -80,5 +86,31 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
             time.sleep(0.05)
             self.update_TrolleyPosition(Position)
             return SetTrolleyPosition_Responses()
+        finally:
+            self.update_Status(1)
+
+    def Pick(self, LocationSpecifier: str, *, metadata: MetadataDict) -> Pick_Responses:
+        logger.info("TrolleyArmProvider.Pick called: location_specifier=%s", LocationSpecifier)
+
+        if self.current_Status != 1:
+            raise RuntimeError("Pick can only be executed while status is Idle (1)")
+
+        self.update_Status(2)
+        try:
+            self.parent_server.pick_item(command_name="TrolleyArmProvider.Pick", location=LocationSpecifier)
+            return Pick_Responses()
+        finally:
+            self.update_Status(1)
+
+    def Place(self, LocationSpecifier: str, *, metadata: MetadataDict) -> Place_Responses:
+        logger.info("TrolleyArmProvider.Place called: location_specifier=%s", LocationSpecifier)
+
+        if self.current_Status != 1:
+            raise RuntimeError("Place can only be executed while status is Idle (1)")
+
+        self.update_Status(2)
+        try:
+            self.parent_server.place_item(command_name="TrolleyArmProvider.Place", location=LocationSpecifier)
+            return Place_Responses()
         finally:
             self.update_Status(1)

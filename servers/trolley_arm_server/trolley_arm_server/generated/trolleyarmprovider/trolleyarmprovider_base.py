@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from sila2.server import FeatureImplementationBase, MetadataDict, ObservableCommandInstance
 
-from .trolleyarmprovider_types import Reset_Responses, SetTrolleyPosition_Responses
+from .trolleyarmprovider_types import Pick_Responses, Place_Responses, Reset_Responses, SetTrolleyPosition_Responses
 
 if TYPE_CHECKING:
 
@@ -136,6 +136,30 @@ class TrolleyArmProviderBase(FeatureImplementationBase, ABC):
 
 
         :param Position: Trolley position on the rail. Must be 0 or greater.
+
+        :param metadata: The SiLA Client Metadata attached to the call
+
+        """
+
+    @abstractmethod
+    def Pick(self, LocationSpecifier: str, *, metadata: MetadataDict) -> Pick_Responses:
+        """
+        Pick up the labware from the specified location.
+
+
+        :param LocationSpecifier: String that specifies the target location.
+
+        :param metadata: The SiLA Client Metadata attached to the call
+
+        """
+
+    @abstractmethod
+    def Place(self, LocationSpecifier: str, *, metadata: MetadataDict) -> Place_Responses:
+        """
+        Place the currently held labware at the specified location.
+
+
+        :param LocationSpecifier: String that specifies the target location.
 
         :param metadata: The SiLA Client Metadata attached to the call
 

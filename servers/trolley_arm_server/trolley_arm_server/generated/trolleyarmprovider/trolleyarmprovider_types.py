@@ -9,6 +9,16 @@ class Reset_Responses(NamedTuple):
     pass
 
 
+class Pick_Responses(NamedTuple):
+
+    pass
+
+
+class Place_Responses(NamedTuple):
+
+    pass
+
+
 class SetTrolleyPosition_Responses(NamedTuple):
 
     pass

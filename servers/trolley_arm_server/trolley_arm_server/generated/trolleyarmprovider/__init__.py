@@ -2,12 +2,14 @@
 from .trolleyarmprovider_base import TrolleyArmProviderBase
 from .trolleyarmprovider_client import TrolleyArmProviderClient
 from .trolleyarmprovider_feature import TrolleyArmProviderFeature
-from .trolleyarmprovider_types import Reset_Responses, SetTrolleyPosition_Responses
+from .trolleyarmprovider_types import Pick_Responses, Place_Responses, Reset_Responses, SetTrolleyPosition_Responses
 
 __all__ = [
     "TrolleyArmProviderBase",
     "TrolleyArmProviderFeature",
     "TrolleyArmProviderClient",
+    "Pick_Responses",
+    "Place_Responses",
     "Reset_Responses",
     "SetTrolleyPosition_Responses",
 ]

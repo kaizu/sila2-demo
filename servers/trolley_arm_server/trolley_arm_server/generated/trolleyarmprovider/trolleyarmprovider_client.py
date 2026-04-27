@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
     from typing import Iterable, Optional
 
-    from trolleyarmprovider_types import Reset_Responses, SetTrolleyPosition_Responses
+    from trolleyarmprovider_types import Pick_Responses, Place_Responses, Reset_Responses, SetTrolleyPosition_Responses
     from sila2.client import ClientMetadataInstance, ClientObservableCommandInstance, ClientObservableProperty
 
 
@@ -39,6 +39,22 @@ class TrolleyArmProviderClient:
     ) -> SetTrolleyPosition_Responses:
         """
         Set trolley position on the rail as a natural number (0 or greater).
+        """
+        ...
+
+    def Pick(
+        self, LocationSpecifier: str, *, metadata: Optional[Iterable[ClientMetadataInstance]] = None
+    ) -> Pick_Responses:
+        """
+        Pick up the labware from the specified location.
+        """
+        ...
+
+    def Place(
+        self, LocationSpecifier: str, *, metadata: Optional[Iterable[ClientMetadataInstance]] = None
+    ) -> Place_Responses:
+        """
+        Place the currently held labware at the specified location.
         """
         ...
 

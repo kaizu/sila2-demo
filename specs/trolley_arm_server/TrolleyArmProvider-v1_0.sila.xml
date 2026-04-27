@@ -32,6 +32,34 @@
     </Parameter>
   </Command>
   <Command>
+    <Identifier>Pick</Identifier>
+    <DisplayName>Pick</DisplayName>
+    <Description>Pick up the labware from the specified location.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>LocationSpecifier</Identifier>
+      <DisplayName>Location Specifier</DisplayName>
+      <Description>String that specifies the target location.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+  </Command>
+  <Command>
+    <Identifier>Place</Identifier>
+    <DisplayName>Place</DisplayName>
+    <Description>Place the currently held labware at the specified location.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>LocationSpecifier</Identifier>
+      <DisplayName>Location Specifier</DisplayName>
+      <Description>String that specifies the target location.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+  </Command>
+  <Command>
     <Identifier>Reset</Identifier>
     <DisplayName>Reset</DisplayName>
     <Description>Reset the server. Raises an error if the reset fails.</Description>
