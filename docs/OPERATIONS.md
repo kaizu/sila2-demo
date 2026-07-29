@@ -30,12 +30,12 @@ docker compose down
 docker compose ps
 ```
 
-正常時は `fastapi` と SiLA2 サーバー群が `Up` になる。
+正常時は `laboratory-model` と SiLA2 サーバー群が `Up` になる。
 
-次に、FastAPI のヘルスチェックを確認する。
+次に、`laboratory_model` のヘルスチェックを確認する。
 
 ```bash
-curl -sS http://localhost:8000/health
+curl -sS http://localhost:8001/health
 ```
 
 正常時の応答:
@@ -44,17 +44,11 @@ curl -sS http://localhost:8000/health
 {"status":"healthy"}
 ```
 
-続いて、FastAPI 経由で SiLA2 サーバー探索を行う。
-
-```bash
-curl -sS "http://localhost:8000/sila/discover?timeout=1&insecure=true"
-```
-
-正常時は、検出されたサーバー一覧と `count` が返る。
+SiLA2 サーバー群への疎通は、下記「直接接続の確認」の smoke スクリプトで行う。
 
 ## 直接接続の確認
 
-FastAPI を使わず、`sila-python` で各 SiLA2 サーバーへ直接接続する確認スクリプトは `samples/` 配下に置く。
+`sila-python` で各 SiLA2 サーバーへ直接接続する確認スクリプトは `samples/` 配下に置く。
 
 全件実行:
 
@@ -76,6 +70,5 @@ samples 実行後は、各サーバーの feature 実装からコマンド呼び
 
 ## 注意事項
 
-- FastAPI コンテナ経由で `/sila/reset` や `/sila/trolley-position` を呼ぶ場合、`127.0.0.1` は FastAPI コンテナ自身を指す。
-- FastAPI から他の SiLA2 サーバーへ接続するには、`/sila/discover` で得られるコンテナ内 IP アドレスと内部ポート `50052` を使う。
-- ホスト側の公開ポート `50053` から `50057` は、ホストマシンから直接アクセスするためのものであり、FastAPI コンテナ内部からそのまま使う前提ではない。
+- ホスト側からは、公開ポート `50052`〜`50057` で各 SiLA2 サーバーへ、`8001` で `laboratory_model` へ直接アクセスする。
+- Docker Compose ネットワーク内でコンテナ間接続する場合は、各サービスのコンテナ名と内部ポート `50052`（SiLA2 サーバー）／`8001`（laboratory-model）を使う。ホスト側の公開ポート `50053`〜`50057` はホストマシンからの直接アクセス用であり、コンテナ内部からそのまま使う前提ではない。

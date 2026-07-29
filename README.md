@@ -1,11 +1,10 @@
 ## Overview
 
-This repository contains a set of mock SiLA2 instrument servers, a small FastAPI helper application, and a shared `laboratory_model` service used to simulate world state across the servers.
+This repository contains a set of mock SiLA2 instrument servers and a shared `laboratory_model` service used to simulate world state across the servers.
 
 The current Docker Compose setup starts:
 
 - `laboratory-model` on `localhost:8001`
-- `fastapi` on `localhost:8000`
 - `sila2-server-1` Microplate Centrifuge on `localhost:50052`
 - `sila2-server-2` PlateLoc on `localhost:50053`
 - `sila2-server-3` Automated Plate Seal Remover on `localhost:50054`
@@ -49,10 +48,8 @@ docker compose logs --tail=120
   SiLA2 server packages for each mock instrument.
 - `laboratory_model/`
   Shared state service that tracks whether locations contain an item and whether each location is accessible.
-- `fastapi_app/`
-  Helper API for health checks, SiLA discovery, reset, feature definition lookup, and trolley position access.
 - `samples/`
-  Direct client scripts that use `sila-python` without going through FastAPI.
+  Direct client scripts that use `sila-python`.
 - `specs/`
   Source SiLA feature XML definitions.
 - `config/`
@@ -109,50 +106,6 @@ Run the roundabout integration sample:
 
 The movement itself is done through the SiLA2 servers directly. The laboratory model is used only for initial setup and final verification.
 
-## FastAPI endpoints
-
-Health:
-
-```bash
-curl http://localhost:8000/health
-```
-
-Root:
-
-```bash
-curl http://localhost:8000/
-```
-
-Discover servers:
-
-```bash
-curl "http://localhost:8000/sila/discover?timeout=3&insecure=true"
-```
-
-Trigger reset on a specific server:
-
-```bash
-curl -X POST "http://localhost:8000/sila/reset?ip=127.0.0.1&port=50057&insecure=true"
-```
-
-Get feature definitions from a specific server:
-
-```bash
-curl "http://localhost:8000/sila/feature-definitions?ip=127.0.0.1&port=50057&insecure=true"
-```
-
-Get trolley position:
-
-```bash
-curl "http://localhost:8000/sila/trolley-position?ip=127.0.0.1&port=50057&insecure=true"
-```
-
-Set trolley position:
-
-```bash
-curl -X POST "http://localhost:8000/sila/trolley-position?ip=127.0.0.1&port=50057&position=3&insecure=true"
-```
-
 ## Note on container networking
 
-When FastAPI accesses SiLA2 servers from inside Docker Compose, `127.0.0.1` refers to the FastAPI container itself, not the host-mapped service port. For container-to-container access, use the service's container address and internal port, or rely on discovery results from inside the Compose network.
+From the host, reach each SiLA2 server on its published port (`localhost:50052`–`50057`) and the laboratory model on `localhost:8001`. For container-to-container access inside Docker Compose, use the service's container name and its internal port (`50052` for SiLA2 servers, `8001` for `laboratory-model`); the host-published ports `50053`–`50057` are for host access and are not meant to be used verbatim from inside another container.

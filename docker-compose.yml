@@ -118,16 +118,3 @@ services:
       - "50057:50052"
     environment:
       - SILA_SERVER_NAME=Trolley-Arm-Server
-
-  fastapi:
-    build:
-      context: ./fastapi_app
-      dockerfile: Dockerfile
-    depends_on:
-      - laboratory-model
-    ports:
-      - "8000:8000"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - LABORATORY_MODEL_URL=http://laboratory-model:8001
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -8,7 +8,6 @@
 
 - `samples/` 配下に、各サーバーへ `sila-python` で直接接続する smoke test スクリプトを配置している。
 - `samples/run_all_smoke_tests.py` を実行すると、各サーバーの代表的なコマンドを順に呼び出して疎通確認できる。
-- この確認では FastAPI は使用しない。
 
 ## 実装上の前提
 
@@ -29,4 +28,4 @@
 ## 統合確認
 
 - `samples/run_roundabout.py` では、`station:1` の item を trolley arm で `seal-remover -> plateloc -> thermal-cycler -> centrifuge -> station:1` と順に移動させる。
-- 初期状態の投入と最終状態の確認には laboratory model を使うが、装置間の移動そのものは FastAPI を介さず SiLA2 サーバーを直接呼び出して行う。
+- 初期状態の投入と最終状態の確認には laboratory model を使うが、装置間の移動そのものは SiLA2 サーバーを直接呼び出して行う。
