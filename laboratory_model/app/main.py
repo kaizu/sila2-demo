@@ -1,3 +1,11 @@
+"""FastAPI HTTP facade over the in-memory `LaboratoryModelState`.
+
+This module wires the world model (`state.py`) to HTTP so the SiLA2 servers (and test
+scripts) can read and mutate the shared world over the network. It owns three concerns:
+startup seeding, error translation (domain errors -> stable JSON + status codes), and
+the route handlers that delegate to the single module-level `state` instance.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -27,10 +35,15 @@ from .state import LaboratoryModelError, LaboratoryModelState
 
 
 logger = logging.getLogger(__name__)
+# One process-wide world instance, shared by every request (the store is thread-safe).
 state = LaboratoryModelState()
 
 
 class LaboratoryModelAPIError(Exception):
+    """Carrier that pairs an already-chosen HTTP status with a ready error payload, so a
+    single exception handler can render it. Distinct from the domain `LaboratoryModelError`
+    (which knows nothing about HTTP)."""
+
     def __init__(self, status_code: int, payload: dict[str, object]):
         super().__init__(payload["error"]["message"])
         self.status_code = status_code
@@ -38,6 +51,9 @@ class LaboratoryModelAPIError(Exception):
 
 
 def raise_http_error(error: LaboratoryModelError) -> None:
+    """Translate a domain error into an HTTP one. Bad input (invalid name, degenerate
+    move) is a 400; every other world-rule violation (occupied/empty/locked) is a 409
+    conflict."""
     status_code = 409
     if error.code in {"invalid_location", "same_source_and_destination"}:
         status_code = 400
@@ -59,6 +75,8 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def initialize_state_from_file() -> None:
+        # Seed the world from the file named by LABORATORY_MODEL_INITIAL_STATE_FILE.
+        # Unset => start empty (still reset, so a reused process begins clean).
         file_path = os.getenv("LABORATORY_MODEL_INITIAL_STATE_FILE")
         if not file_path:
             logger.info("Starting laboratory model with empty initial state")
@@ -69,6 +87,8 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+        # Malformed request bodies/params: report as our error envelope with code
+        # `invalid_request` rather than FastAPI's default 422 shape.
         logger.info("Rejected invalid request for path=%s", request.url.path)
         details = exc.errors()
         return JSONResponse(
@@ -84,12 +104,16 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(LaboratoryModelAPIError)
     async def handle_api_error(request: Request, exc: LaboratoryModelAPIError) -> JSONResponse:
+        # Render a translated domain error (from `raise_http_error`) as JSON.
         logger.info("Rejected request for path=%s with code=%s", request.url.path, exc.payload["error"]["code"])
         return JSONResponse(status_code=exc.status_code, content=exc.payload)
 
     @app.get("/health")
     def health() -> dict[str, str]:
+        # Liveness probe used by compose/ops to tell the world model is up.
         return {"status": "healthy"}
+
+    # --- Item mutations. Each catches the domain error and re-raises it as HTTP. ---
 
     @app.post("/items/add", response_model=AddItemResponse, status_code=201)
     def add_item(request: AddItemRequest) -> AddItemResponse:
@@ -98,6 +122,7 @@ def create_app() -> FastAPI:
             record = state.add_item(request.location)
         except LaboratoryModelError as error:
             raise_http_error(error)
+        # Return the full resulting location state (occupancy + accessibility).
         location_state = state.get_location(record.location)
         return AddItemResponse(**location_state.model_dump())
 
@@ -119,6 +144,8 @@ def create_app() -> FastAPI:
             raise_http_error(error)
         return RemoveItemResponse(location=request.location, removed=True, item_id=record.item_id)
 
+    # --- Accessibility control (a lid/door closing or opening, driven by servers). ---
+
     @app.post("/locations/lock", response_model=LocationControlResponse)
     def lock_location(request: LocationControlRequest) -> LocationControlResponse:
         logger.info("Locking location=%s", request.location)
@@ -137,8 +164,12 @@ def create_app() -> FastAPI:
             raise_http_error(error)
         return LocationControlResponse(location=location_state.location, accessible=location_state.accessible)
 
+    # --- Reads. ---
+
     @app.get("/locations/{location}", response_model=LocationState)
     def get_location(location: str) -> LocationState:
+        # Path param bypasses the request-model validators, so validate the name here
+        # (an invalid name becomes a 400 via `invalid_location`).
         try:
             location = validate_location(location)
             logger.info("Reading location=%s", location)
@@ -156,11 +187,13 @@ def create_app() -> FastAPI:
 
     @app.get("/state", response_model=StateResponse)
     def get_state() -> StateResponse:
+        # Whole-world snapshot for debugging and test assertions.
         logger.info("Reading complete laboratory state")
         return StateResponse(locations=state.snapshot())
 
     @app.post("/reset", response_model=ResetResponse)
     def reset() -> ResetResponse:
+        # Clear the world to empty. Does NOT re-seed from the startup file (see state.reset).
         logger.info("Resetting laboratory state")
         state.reset()
         return ResetResponse(cleared=True)
@@ -168,4 +201,5 @@ def create_app() -> FastAPI:
     return app
 
 
+# Module-level ASGI app object uvicorn imports (`app.main:app`).
 app = create_app()
