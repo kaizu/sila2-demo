@@ -24,3 +24,8 @@ wheels/
 .env.*
 scripts/
 .codex
+
+# Assistant working notes / guidelines (disk-only, like sibling ofplang repos)
+CLAUDE.md
+AGENTS.md
+dev-notes/
