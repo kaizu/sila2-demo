@@ -19,6 +19,10 @@ dev = [
     "fastapi>=0.115",
     "ruff>=0.16",
     "mypy>=1.11",
+    # The laboratory model reads its seed from YAML. Its own container gets PyYAML through
+    # `uvicorn[standard]`, but the tests run in this environment, which does not.
+    "pyyaml>=6.0",
+    "types-pyyaml",
 ]
 
 [tool.pytest.ini_options]
