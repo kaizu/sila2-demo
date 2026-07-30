@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Any, NoReturn
 
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
@@ -44,16 +45,22 @@ class LaboratoryModelAPIError(Exception):
     single exception handler can render it. Distinct from the domain `LaboratoryModelError`
     (which knows nothing about HTTP)."""
 
-    def __init__(self, status_code: int, payload: dict[str, object]):
+    # The payload is always the one-key envelope {"error": {code, message, details}}, so it
+    # is typed as a nested mapping rather than an opaque object: the handler below reads
+    # through it.
+    def __init__(self, status_code: int, payload: dict[str, dict[str, Any]]):
         super().__init__(payload["error"]["message"])
         self.status_code = status_code
         self.payload = payload
 
 
-def raise_http_error(error: LaboratoryModelError) -> None:
+def raise_http_error(error: LaboratoryModelError) -> NoReturn:
     """Translate a domain error into an HTTP one. Bad input (invalid name, degenerate
     move) is a 400; every other world-rule violation (occupied/empty/locked) is a 409
-    conflict."""
+    conflict.
+
+    Declared NoReturn because it always raises -- that is what lets the callers below use
+    it as the whole body of an `except` clause and still be seen to return a value."""
     status_code = 409
     if error.code in {"invalid_location", "same_source_and_destination"}:
         status_code = 400
@@ -138,7 +145,12 @@ def create_app() -> FastAPI:
             record = state.move_item(request.source, request.destination)
         except LaboratoryModelError as error:
             raise_http_error(error)
-        return MoveItemResponse(source=request.source, destination=request.destination, moved=True, item_id=record.item_id)
+        return MoveItemResponse(
+            source=request.source,
+            destination=request.destination,
+            moved=True,
+            item_id=record.item_id,
+        )
 
     @app.delete("/items/remove", response_model=RemoveItemResponse)
     def remove_item(request: RemoveItemRequest) -> RemoveItemResponse:

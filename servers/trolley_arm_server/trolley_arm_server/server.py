@@ -53,7 +53,9 @@ class Server(SilaServer):
         self.trolleyarmprovider = TrolleyArmProviderImpl(self)
         self.set_feature_implementation(TrolleyArmProviderFeature, self.trolleyarmprovider)
 
-    def _request_laboratory_model(self, *, command_name: str, path: str, method: str, payload: dict[str, object]) -> dict[str, object]:
+    def _request_laboratory_model(
+        self, *, command_name: str, path: str, method: str, payload: dict[str, object]
+    ) -> dict[str, object]:
         if not self.laboratory_model_url:
             raise RuntimeError(f"{command_name} requires LABORATORY_MODEL_URL to be configured")
 
@@ -69,11 +71,17 @@ class Server(SilaServer):
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
             raise RuntimeError(f"{command_name} failed to access laboratory model: {error}") from error
 
-    def _require_laboratory_model_move_configuration(self, *, command_name: str) -> None:
+    def _require_laboratory_model_move_configuration(self, *, command_name: str) -> str:
+        """Check the world-model wiring and hand back the arm's own holding location.
+
+        Returning it rather than just validating is what lets `pick_item`/`place_item`
+        below pass a definitely-configured location on: the attribute itself is optional,
+        because a server may run without the world model wired up."""
         if not self.laboratory_model_url:
             raise RuntimeError(f"{command_name} requires LABORATORY_MODEL_URL to be configured")
         if not self.laboratory_model_location:
             raise RuntimeError(f"{command_name} requires LABORATORY_MODEL_LOCATION to be configured")
+        return self.laboratory_model_location
 
     def move_item(self, *, command_name: str, source: str, destination: str) -> None:
         # Apply a world-model move source -> destination (POST /items/move).
@@ -87,8 +95,10 @@ class Server(SilaServer):
 
     def pick_item(self, *, command_name: str, location: str) -> None:
         # Pick = move the item from `location` onto the arm's own holding location.
-        self.move_item(command_name=command_name, source=location, destination=self.laboratory_model_location)
+        arm_location = self._require_laboratory_model_move_configuration(command_name=command_name)
+        self.move_item(command_name=command_name, source=location, destination=arm_location)
 
     def place_item(self, *, command_name: str, location: str) -> None:
         # Place = move the item from the arm's holding location to `location`.
-        self.move_item(command_name=command_name, source=self.laboratory_model_location, destination=location)
+        arm_location = self._require_laboratory_model_move_configuration(command_name=command_name)
+        self.move_item(command_name=command_name, source=arm_location, destination=location)

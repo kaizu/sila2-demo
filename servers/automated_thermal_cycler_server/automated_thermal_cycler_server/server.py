@@ -87,7 +87,10 @@ class Server(SilaServer):
         (lid/door open => unlock, close => lock). Best-effort; a failure is surfaced as a
         command error so the caller knows the physical effect did not register."""
         if not self.laboratory_model_url or not self.laboratory_model_location:
-            logger.info("%s skipped laboratory model accessibility update because configuration is missing", command_name)
+            logger.info(
+                "%s skipped laboratory model accessibility update because configuration is missing",
+                command_name,
+            )
             return
 
         endpoint = "/locations/unlock" if accessible else "/locations/lock"

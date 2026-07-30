@@ -98,7 +98,9 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         self._sealing_time = SealingTime
         return SetSealingTime_Responses()
 
-    def SetSealingTemperature(self, SealingTemperature: int, *, metadata: MetadataDict) -> SetSealingTemperature_Responses:
+    def SetSealingTemperature(
+        self, SealingTemperature: int, *, metadata: MetadataDict
+    ) -> SetSealingTemperature_Responses:
         # Unobservable setter; same status semantics as SetSealingTime.
         logger.info("PlateLocController.SetSealingTemperature called: sealing_temperature=%s", SealingTemperature)
         if SealingTemperature < 0:
