@@ -6,16 +6,18 @@
 # enforce and apply physical effects (an item must be present; a lid open/close toggles
 # the location's accessibility). All world access is best-effort HTTP to the laboratory
 # model, and is skipped (with a log line) when the model is not configured.
+#
+# The HTTP mechanics live in the shared `laboratory_client`; what the world means -- that a
+# run needs a plate, that an open lid is a reachable location -- stays here, because the
+# interpretation of world state belongs to the command that performs it.
 
-import json
 import logging
 import os
-from urllib.error import HTTPError, URLError
-from urllib.parse import quote
-from urllib.request import Request, urlopen
 from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
+
+from laboratory_client import LaboratoryModelRequestError, get_location, request_laboratory_model
 
 from .feature_implementations.automatedthermalcyclercontroller_impl import AutomatedThermalCyclerControllerImpl
 from .generated.automatedthermalcyclercontroller import AutomatedThermalCyclerControllerFeature
@@ -65,12 +67,9 @@ class Server(SilaServer):
 
         # Read this location's state from the world model. Any lookup failure is treated
         # as a hard error for the command (we cannot confirm the precondition holds).
-        encoded_location = quote(self.laboratory_model_location, safe="")
-        lookup_url = f"{self.laboratory_model_url.rstrip('/')}/locations/{encoded_location}"
         try:
-            with urlopen(lookup_url, timeout=2.0) as response:
-                payload = json.load(response)
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+            payload = get_location(base_url=self.laboratory_model_url, location=self.laboratory_model_location)
+        except LaboratoryModelRequestError as error:
             raise RuntimeError(
                 f"{command_name} requires an item at location '{self.laboratory_model_location}', "
                 f"but laboratory model lookup failed: {error}"
@@ -93,18 +92,17 @@ class Server(SilaServer):
             )
             return
 
+        # The world model has one endpoint per direction; choosing between them is this
+        # server's call, since "the lid is open" is what makes the location reachable.
         endpoint = "/locations/unlock" if accessible else "/locations/lock"
-        payload = json.dumps({"location": self.laboratory_model_location}).encode("utf-8")
-        request = Request(
-            f"{self.laboratory_model_url.rstrip('/')}{endpoint}",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
         try:
-            with urlopen(request, timeout=2.0):
-                return
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+            request_laboratory_model(
+                base_url=self.laboratory_model_url,
+                path=endpoint,
+                method="POST",
+                payload={"location": self.laboratory_model_location},
+            )
+        except LaboratoryModelRequestError as error:
             raise RuntimeError(
                 f"{command_name} failed to update access state for location '{self.laboratory_model_location}': {error}"
             ) from error

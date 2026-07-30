@@ -22,11 +22,22 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-# Tests live next to the component they cover (laboratory_model/tests/, and later
-# servers/<name>/tests/). Each component therefore contributes one entry here and one to
-# `pythonpath`, which is what makes `import app...` resolve without installing anything.
-testpaths = ["laboratory_model/tests"]
-pythonpath = ["laboratory_model"]
+# Tests live next to the component they cover (laboratory_model/tests/,
+# laboratory-client/tests/, and later servers/<name>/tests/). Each component therefore
+# contributes one entry here and one to `pythonpath`, which is what makes `import app...`
+# or `import laboratory_client...` resolve without installing anything.
+#
+# Note the hyphen in `laboratory-client`: a project directory must NOT be named after the
+# package it contains. With --import-mode=importlib below, pytest derives a test module's
+# name from its path relative to the root, so a `laboratory_client/tests/` would be imported
+# as `laboratory_client.tests.<module>` -- registering the project directory itself as an
+# empty namespace package under the name the real package needs, and every
+# `from laboratory_client import ...` in the tests would then fail. Naming the directory
+# after the distribution (`laboratory-client`) makes that collision impossible, since a
+# hyphen cannot appear in a module name. `laboratory_model/` avoids the same trap by holding
+# a package called `app`.
+testpaths = ["laboratory_model/tests", "laboratory-client/tests"]
+pythonpath = ["laboratory_model", "laboratory-client"]
 # -ra summarises non-passing outcomes. --import-mode=importlib keeps test modules from
 # colliding once several components have a tests/ directory holding same-named files.
 addopts = "-ra --import-mode=importlib"
@@ -48,17 +59,22 @@ extend-exclude = ["**/generated", "**/__main__.py"]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "W"]
 
 [tool.ruff.lint.isort]
-# Neither of these is installed, so ruff would otherwise file them under third-party:
-# `app` is the laboratory model's own package and `common` is the helper module the
-# sample scripts share. Declaring them keeps our imports in their own block.
-known-first-party = ["app", "common"]
+# None of these is installed into the dev environment, so ruff would otherwise file them
+# under third-party: `app` is the laboratory model's own package, `laboratory_client` the
+# shared HTTP client the servers import, and `common` the helper module the sample scripts
+# share. Declaring them keeps our imports in their own block.
+known-first-party = ["app", "common", "laboratory_client"]
 
 # Non-strict, like the sibling repos: the point is to catch real type errors, not to
 # force annotations onto every function.
 [tool.mypy]
 python_version = "3.14"
-files = ["laboratory_model", "samples", "servers"]
+files = ["laboratory_model", "laboratory-client", "samples", "servers"]
 exclude = "(/generated/|__main__\\.py$)"
+# The shared client is not installed into the dev environment, so point mypy at the
+# directory that holds the package (mirroring pytest's `pythonpath` above); without this
+# the servers' `from laboratory_client import ...` would be an unresolved import.
+mypy_path = ["laboratory-client", "laboratory_model"]
 # sila2, typer and uvicorn ship no stubs we depend on.
 ignore_missing_imports = true
 warn_unused_ignores = true

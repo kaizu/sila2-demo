@@ -6,15 +6,19 @@
 # Pick = source -> arm, Place = arm -> destination. Unlike the instrument servers this one
 # performs moves (not occupancy checks / accessibility toggles), so it requires the world
 # model to be configured and raises if it is not (a move has to actually happen).
+#
+# The HTTP mechanics live in the shared `laboratory_client` (this server's own generic
+# request helper was what that module was extracted from); modelling a transfer as two
+# moves through the arm's holding location stays here, because that is this instrument's
+# behaviour rather than something the transport should know.
 
-import json
 import logging
 import os
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
+
+from laboratory_client import LaboratoryModelRequestError, request_laboratory_model
 
 from .feature_implementations.trolleyarmprovider_impl import TrolleyArmProviderImpl
 from .generated.trolleyarmprovider import TrolleyArmProviderFeature
@@ -56,19 +60,22 @@ class Server(SilaServer):
     def _request_laboratory_model(
         self, *, command_name: str, path: str, method: str, payload: dict[str, object]
     ) -> dict[str, object]:
+        """Send one request to the world model, naming the command in any failure.
+
+        Thin wrapper over the shared client: it supplies the configured base URL and turns
+        the client's transport error into this server's command-scoped message, which is
+        what the feature implementation reports back over SiLA2."""
         if not self.laboratory_model_url:
             raise RuntimeError(f"{command_name} requires LABORATORY_MODEL_URL to be configured")
 
-        request = Request(
-            f"{self.laboratory_model_url.rstrip('/')}/{path.lstrip('/')}",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-            method=method,
-        )
         try:
-            with urlopen(request, timeout=2.0) as response:
-                return json.load(response)
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+            return request_laboratory_model(
+                base_url=self.laboratory_model_url,
+                path=path,
+                method=method,
+                payload=payload,
+            )
+        except LaboratoryModelRequestError as error:
             raise RuntimeError(f"{command_name} failed to access laboratory model: {error}") from error
 
     def _require_laboratory_model_move_configuration(self, *, command_name: str) -> str:

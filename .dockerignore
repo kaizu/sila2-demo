@@ -1,0 +1,22 @@
+# Build contexts are the repository root (every server image needs both its own package
+# and the shared laboratory_client), so this file is what keeps that context small.
+# Everything here is either a local-only artefact or irrelevant to an image.
+
+.git
+.github
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+**/__pycache__
+*.pyc
+
+# Assistant working notes and local docs are not part of any image.
+CLAUDE.md
+dev-notes
+
+# Sample scripts and specs are run from the host against the running stack, never inside
+# a server container.
+samples
+specs
+docs

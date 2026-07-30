@@ -5,6 +5,10 @@ requires-python = ">=3.10"
 dependencies = [
     "sila2",
     "typer",
+    # The shared laboratory-model HTTP client, installed from ./laboratory_client by this
+    # server's Dockerfile before the server package itself (so pip resolves it locally and
+    # never looks for a `laboratory-client` release online).
+    "laboratory-client",
 ]
 
 [build-system]

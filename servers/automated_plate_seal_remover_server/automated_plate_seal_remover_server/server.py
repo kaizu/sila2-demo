@@ -5,16 +5,18 @@
 # server's precondition bridge to the shared world model (Peel needs a plate present).
 # This instrument has no lid/door, so there is no accessibility control here. The world
 # lookup is best-effort HTTP, skipped (with a log line) when unconfigured.
+#
+# The HTTP mechanics live in the shared `laboratory_client`; reading occupancy as "a plate
+# is ready to be peeled" stays here, because the interpretation of world state belongs to
+# the command that performs it.
 
-import json
 import logging
 import os
-from urllib.error import HTTPError, URLError
-from urllib.parse import quote
-from urllib.request import urlopen
 from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
+
+from laboratory_client import LaboratoryModelRequestError, get_location
 
 from .feature_implementations.automatedplatesealremovercontroller_impl import AutomatedPlateSealRemoverControllerImpl
 from .generated.automatedplatesealremovercontroller import AutomatedPlateSealRemoverControllerFeature
@@ -66,12 +68,9 @@ class Server(SilaServer):
 
         # Read this location's state from the world model. Any lookup failure is treated
         # as a hard error for the command (we cannot confirm the precondition holds).
-        encoded_location = quote(self.laboratory_model_location, safe="")
-        lookup_url = f"{self.laboratory_model_url.rstrip('/')}/locations/{encoded_location}"
         try:
-            with urlopen(lookup_url, timeout=2.0) as response:
-                payload = json.load(response)
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+            payload = get_location(base_url=self.laboratory_model_url, location=self.laboratory_model_location)
+        except LaboratoryModelRequestError as error:
             raise RuntimeError(
                 f"{command_name} requires an item at location '{self.laboratory_model_location}', "
                 f"but laboratory model lookup failed: {error}"
