@@ -12,6 +12,7 @@ import logging
 import os
 
 from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -90,7 +91,12 @@ def create_app() -> FastAPI:
         # Malformed request bodies/params: report as our error envelope with code
         # `invalid_request` rather than FastAPI's default 422 shape.
         logger.info("Rejected invalid request for path=%s", request.url.path)
-        details = exc.errors()
+        # jsonable_encoder is required, not cosmetic: when a field validator raises (as
+        # `validate_location` does for a bad name) pydantic puts the original exception
+        # object into the error's `ctx`, which JSON cannot serialise. Encoding first
+        # coerces it to a string -- the same thing FastAPI's own default handler does --
+        # so a bad location comes back as a 400 instead of failing to render.
+        details = jsonable_encoder(exc.errors())
         return JSONResponse(
             status_code=400,
             content={
