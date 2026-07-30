@@ -41,6 +41,11 @@ PLACE_DESTINATION = "station:2"
 
 def main() -> int:
     parser = build_parser("Smoke test the Trolley Arm SiLA2 server directly.", DEFAULT_PORT)
+    parser.add_argument(
+        "--laboratory-model-url",
+        default=DEFAULT_LABORATORY_MODEL_URL,
+        help="Laboratory model base URL used to seed and inspect the transferred item",
+    )
     args = parser.parse_args()
 
     with connect(args.host, args.port, insecure=args.insecure) as client:
@@ -50,8 +55,8 @@ def main() -> int:
         # something to carry. (Done after connecting, unlike the instrument samples, only
         # because nothing here needs the world before the client exists.)
         feature = client.TrolleyArmProvider
-        reset_laboratory_model(laboratory_model_url=DEFAULT_LABORATORY_MODEL_URL)
-        add_item_to_location(laboratory_model_url=DEFAULT_LABORATORY_MODEL_URL, location=PICK_SOURCE)
+        reset_laboratory_model(laboratory_model_url=args.laboratory_model_url)
+        add_item_to_location(laboratory_model_url=args.laboratory_model_url, location=PICK_SOURCE)
 
         # Rail position: step off the current position and back again. Restoring it means
         # this sample leaves the arm exactly as it found it, so it can be re-run against a
@@ -70,17 +75,20 @@ def main() -> int:
         # Pick: the source should now be empty and the item should be sitting on the arm.
         # Both ends are printed because it is the pair that shows the hop actually happened.
         feature.Pick(LocationSpecifier=PICK_SOURCE)
-        print(f"Source after pick: {get_location_state(laboratory_model_url=DEFAULT_LABORATORY_MODEL_URL, location=PICK_SOURCE)}")
+        print(
+            "Source after pick: "
+            f"{get_location_state(laboratory_model_url=args.laboratory_model_url, location=PICK_SOURCE)}"
+        )
         print(
             "Trolley location after pick: "
-            f"{get_location_state(laboratory_model_url=DEFAULT_LABORATORY_MODEL_URL, location=TROLLEY_LOCATION)}"
+            f"{get_location_state(laboratory_model_url=args.laboratory_model_url, location=TROLLEY_LOCATION)}"
         )
 
         # Place: the item leaves the arm for the destination, completing the transfer.
         feature.Place(LocationSpecifier=PLACE_DESTINATION)
         print(
             "Destination after place: "
-            f"{get_location_state(laboratory_model_url=DEFAULT_LABORATORY_MODEL_URL, location=PLACE_DESTINATION)}"
+            f"{get_location_state(laboratory_model_url=args.laboratory_model_url, location=PLACE_DESTINATION)}"
         )
 
         # Reset returns the arm to Idle. The item is deliberately left at the destination:
