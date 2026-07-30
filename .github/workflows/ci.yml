@@ -1,0 +1,44 @@
+# Runs the checks that need nothing but a Python interpreter: the unit tests, ruff and
+# mypy. The samples under samples/ are deliberately NOT run here -- they drive a live
+# docker compose stack over the network, which is an integration concern kept to manual
+# runs (see docs/OPERATIONS.md).
+name: CI
+
+# `labcode` is the branch this fork's work happens on; main and develop are listed so the
+# workflow still fires if the work is ever merged back.
+on:
+  push:
+    branches: [labcode, main, develop]
+  pull_request:
+    branches: [labcode, main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # uv installs the interpreter itself (.python-version pins 3.14) and syncs the
+      # locked dependencies, including the `dev` group, so each job below runs exactly
+      # the command a developer runs locally.
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv run pytest
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv run ruff check .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv run mypy

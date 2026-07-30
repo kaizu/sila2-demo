@@ -70,6 +70,12 @@ uv run mypy
 
 `generated/` と各サーバーの `__main__.py` は生成コードなので対象外（設定側で除外済み）。
 
+## CI
+
+`.github/workflows/ci.yml` が `labcode` / `main` / `develop` への push と PR で発火し、`test`（pytest）・`lint`（ruff）・`typecheck`（mypy）の 3 ジョブを回す。各ジョブは uv でインタプリタと依存を用意し、手元と同じコマンドをそのまま実行する。
+
+**`samples/` は CI の対象外**。compose スタックを立てた実サービスに対する統合確認であり、手元運用に留める。
+
 ## 直接接続の確認
 
 `sila-python` で各 SiLA2 サーバーへ直接接続する確認スクリプトは `samples/` 配下に置く。実サービスに対する疎通確認であり、上記の単体テストとは目的が異なる（前者は規則、こちらは配備）。
