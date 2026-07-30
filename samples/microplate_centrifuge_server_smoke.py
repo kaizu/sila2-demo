@@ -25,7 +25,7 @@ from common import (
 # configured to act on (LABORATORY_MODEL_LOCATION in docker-compose.yml). The two must
 # agree with compose or the seeded plate lands somewhere the server never looks at.
 DEFAULT_PORT = 50052
-DEFAULT_LOCATION = "centrifuge:1"
+DEFAULT_LOCATION = "centrifuge.deck"
 
 
 def main() -> int:

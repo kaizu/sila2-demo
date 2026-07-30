@@ -55,7 +55,7 @@ docker compose logs --tail=120
 - `specs/`
   Source SiLA feature XML definitions.
 - `config/`
-  Startup configuration such as the initial laboratory model state file.
+  Startup configuration, notably the laboratory model's seed file.
 - `external/`
   Reference code and external sources that are not the direct development target.
 
@@ -63,14 +63,24 @@ docker compose logs --tail=120
 
 The `laboratory_model` service is shared by all SiLA2 servers in Docker Compose.
 
-- Each location is identified by a string such as `station:1` or `centrifuge:1`.
-- A location can hold at most one item.
-- Each location also has an `accessible` flag.
-- Some instrument commands require an item to be present at the configured location.
-- Thermal cycler lid open/close and centrifuge door open/close update location accessibility.
-- Trolley arm `Pick` and `Place` are modeled as moves through the trolley arm's own location.
+The world is organised around devices, each holding a fixed set of spots plus an opaque bag
+of state.
 
-The service loads startup state from `config/laboratory_model.initial_state.json`.
+- A location is always `device.spot`, such as `station.slot1` or `centrifuge.deck`. There is
+  no shorthand where a device name stands in for its only spot.
+- The topology is declared by the seed and does not grow at runtime: addressing a device or
+  spot that was never declared is a 404, not an empty location.
+- A spot can hold at most one item, and has its own `accessible` flag. The model refuses to
+  reach into a spot that is not accessible.
+- Device `state` is stored verbatim and read by no rule in the service; keys like `lid` mean
+  something only to the server that wrote them.
+- Some instrument commands require an item to be present at the configured location.
+- Thermal cycler lid open/close and centrifuge door open/close update spot accessibility.
+- Trolley arm `Pick` and `Place` are modeled as moves through the trolley arm's own spot.
+
+The service reads its t=0 world -- topology, resting device state and initial occupancy --
+from `config/laboratory_model.seed.yaml`. `POST /reseed` rereads it; `POST /reset` empties the
+world but keeps the topology. See `docs/LABORATORY_MODEL.md`.
 
 ## Unit tests
 
@@ -81,9 +91,10 @@ under a second. Run them from the repository root.
 uv run pytest
 ```
 
-They currently cover `laboratory_model` only (world rules, HTTP contract, startup seeding).
-Tests live next to the component they cover, in `laboratory_model/tests/`; the dependencies
-and pytest configuration are in the root `pyproject.toml`.
+They cover `laboratory_model` (world rules, HTTP contract, seeding) and the shared
+`laboratory-client` (its HTTP transport and configuration). Tests live next to the component
+they cover, in `<component>/tests/`; the dependencies and pytest configuration are in the root
+`pyproject.toml`. See `docs/RULES.md` for the policy.
 
 ## Lint and type checking
 
@@ -125,13 +136,13 @@ Run the roundabout integration sample:
 .venv/bin/python samples/run_roundabout.py
 ```
 
-`run_roundabout.py` prepares one item at `station:1`, then moves it through:
+`run_roundabout.py` prepares one item at `station.slot1`, then moves it through:
 
-- `seal-remover:1`
-- `plateloc:1`
-- `thermal-cycler:1`
-- `centrifuge:1`
-- back to `station:1`
+- `seal-remover.stage`
+- `plateloc.stage`
+- `thermal-cycler.block`
+- `centrifuge.deck`
+- back to `station.slot1`
 
 The movement itself is done through the SiLA2 servers directly. The laboratory model is used only for initial setup and final verification.
 

@@ -18,11 +18,11 @@ from laboratory_client import config
 
 def test_reads_both_variables() -> None:
     loaded = config.load_laboratory_model_config(
-        {"LABORATORY_MODEL_URL": "http://laboratory-model:8001", "LABORATORY_MODEL_LOCATION": "centrifuge:1"}
+        {"LABORATORY_MODEL_URL": "http://laboratory-model:8001", "LABORATORY_MODEL_LOCATION": "centrifuge.deck"}
     )
 
     assert loaded.url == "http://laboratory-model:8001"
-    assert loaded.location == "centrifuge:1"
+    assert loaded.location == "centrifuge.deck"
 
 
 def test_absent_variables_are_not_configured_rather_than_an_error() -> None:
@@ -53,9 +53,9 @@ def test_a_set_but_blank_variable_is_an_error(blank: str) -> None:
     assert "LABORATORY_MODEL_LOCATION" in str(error.value)
 
 
-@pytest.mark.parametrize("padded", [" centrifuge:1", "centrifuge:1 ", "\tcentrifuge:1"])
+@pytest.mark.parametrize("padded", [" centrifuge.deck", "centrifuge.deck ", "\tcentrifuge.deck"])
 def test_a_padded_location_is_rejected_not_trimmed(padded: str) -> None:
-    # Trimming would leave this server acting on `centrifuge:1` while whoever set the
+    # Trimming would leave this server acting on `centrifuge.deck` while whoever set the
     # variable believes it is the padded string -- and the world model rejects padded names
     # too, so accepting one here just moves the failure somewhere less obvious.
     with pytest.raises(config.LaboratoryModelConfigError):

@@ -6,10 +6,12 @@
 
 ローカル実行の基本形は `docker-compose.yml` にまとまっており、複数の SiLA2 サーバーと `laboratory_model` をまとめて起動できる。
 
-`laboratory_model/` には、Docker Compose 上で共有される簡易な世界状態サービスがあり、場所ごとの item の有無と access 状態を管理する。起動時初期状態や各サーバーとの連携方針は `docs/LABORATORY_MODEL.md` に整理する。
+`laboratory_model/` には、Docker Compose 上で共有される簡易な世界状態サービスがある。**device 中心**の世界を持ち、各 device が固定の spot 集合（item の有無と access 状態）と、無解釈の state（key-value）を持つ。location は常に `device.spot` で、**トポロジはシードが宣言し、未宣言の場所への操作は 404 になる**。シードの形式や各サーバーとの連携方針は `docs/LABORATORY_MODEL.md` に整理する。
+
+`laboratory-client/` には、各 SiLA2 サーバーが laboratory model に到達するための共有パッケージ（HTTP 転送層と環境変数からの設定読み取り）がある。世界の意味づけは共有せず、各サーバーの実装に残す。
 
 `specs/` には各サーバーの SiLA 定義 XML があり、`external/` には直接の開発対象ではない参考用の外部実装や依存ライブラリのソースコードが配置されている。
 
-`samples/` には、`sila-python` で各 SiLA2 サーバーへ直接接続して動作確認するための Python スクリプトを置く。単体の smoke test に加えて、`samples/run_roundabout.py` では `station:1` から各装置を一周して再び `station:1` へ戻す統合確認を行う。
+`samples/` には、`sila-python` で各 SiLA2 サーバーへ直接接続して動作確認するための Python スクリプトを置く。単体の smoke test に加えて、`samples/run_roundabout.py` では `station.slot1` から各装置を一周して再び `station.slot1` へ戻す統合確認を行う。
 
 現在の Docker Compose 設定では、各 SiLA2 サーバーは `--verbose` 付きで起動し、コマンド呼び出し時の `INFO` ログを `docker compose logs` で確認できる。

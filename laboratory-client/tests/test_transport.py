@@ -88,12 +88,12 @@ def test_a_write_sends_the_payload_as_json(captured: list[Any]) -> None:
         base_url="http://lab:8001",
         path="/items/add",
         method="POST",
-        payload={"location": "station:1"},
+        payload={"location": "station.slot1"},
     )
 
     request, _ = captured[0]
     assert request.get_method() == "POST"
-    assert json.loads(request.data.decode("utf-8")) == {"location": "station:1"}
+    assert json.loads(request.data.decode("utf-8")) == {"location": "station.slot1"}
     assert request.get_header("Content-type") == "application/json"
 
 
@@ -109,7 +109,7 @@ def test_the_default_timeout_is_applied(captured: list[Any]) -> None:
 def test_returns_the_decoded_body(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(transport, "urlopen", lambda request, timeout=None: FakeResponse({"occupied": True}))
 
-    result = transport.request_laboratory_model(base_url="http://lab:8001", path="/locations/station:1")
+    result = transport.request_laboratory_model(base_url="http://lab:8001", path="/locations/station.slot1")
 
     assert result == {"occupied": True}
 
@@ -117,10 +117,10 @@ def test_returns_the_decoded_body(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_get_location_percent_encodes_the_name(captured: list[Any]) -> None:
     # Real location names contain a colon, and dotted labcode spot names are coming, so the
     # name goes into the path encoded -- getting this wrong addresses the wrong location.
-    transport.get_location(base_url="http://lab:8001", location="centrifuge:1")
+    transport.get_location(base_url="http://lab:8001", location="centrifuge.deck")
 
     request, _ = captured[0]
-    assert request.full_url == "http://lab:8001/locations/centrifuge%3A1"
+    assert request.full_url == "http://lab:8001/locations/centrifuge.deck"
 
 
 @pytest.mark.parametrize(

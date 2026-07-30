@@ -1,0 +1,55 @@
+# The laboratory model's t=0 description for the docker-compose stack.
+#
+# This is the world the mock lab comes up with: which devices exist, which spots each one has,
+# what resting condition each device is in, and where any object already sits. It is read at
+# startup and again by `POST /reseed`; nothing is persisted, so this file is the only source of
+# initial contents.
+#
+# The `devices` and `boundary` sections have the same shape as labcode's `env.yaml` and
+# `boundary.yaml`, so the normal case is a faithful copy of what a workflow believes. The file
+# is deliberately separate from those documents rather than being them: keeping it apart is what
+# allows a divergence to be introduced on purpose -- a spot the workflow expects and reality
+# does not have, say -- which is the reason for running a second model of the world at all.
+#
+# A location is always `device.spot`. The `LABORATORY_MODEL_LOCATION` of each server in
+# docker-compose.yml must name one of the spots below, or that server will fail its world calls
+# with `unknown_location`.
+
+devices:
+  # The four instruments. Each holds one plate at a time. `state` is opaque to the laboratory
+  # model -- it stores these verbatim and no world rule reads them -- and carries each device's
+  # resting condition, which is what a server expects to find when it takes over.
+  - id: centrifuge
+    spots: [deck]
+    state: { door: open }
+
+  - id: thermal-cycler
+    spots: [block]
+    state: { lid: open }
+
+  # The sealer and the seal remover have no lid or door of their own, so no resting state.
+  - id: plateloc
+    spots: [stage]
+
+  - id: seal-remover
+    spots: [stage]
+
+  # The station is the workflow's entry and exit point: two slots, so a transfer between two
+  # plain holding places needs no instrument to be in any particular state.
+  - id: station
+    spots: [slot1, slot2]
+
+  # The transporter. labcode models an arm without spots -- an object in transit is simply "on
+  # the transporter" -- but this world has to say where a carried plate physically is, so the arm
+  # is declared as a device with the one spot an item occupies while being moved.
+  - id: trolley-arm
+    spots: [gripper]
+
+boundary:
+  # One plate, waiting on the station where a run would pick it up. Ports without a `spot` would
+  # be Pure Data in labcode's terms and contribute no occupancy.
+  #
+  # The sample scripts do not depend on this: each one resets the world and arranges exactly what
+  # it needs, so what is here is a convenient starting point rather than a fixture.
+  inputs:
+    plate: { spot: station.slot1 }

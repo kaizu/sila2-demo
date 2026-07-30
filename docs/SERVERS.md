@@ -14,10 +14,14 @@
 - observable command の終了処理は `sila2` 側の manager に任せる前提とし、feature 実装側で `instance.complete()` は呼ばない。
 - PlateLoc の sealing temperature や cycle count などは内部状態として保持し、getter 経由で参照する。
 - Automated Thermal Cycler の `StartRun` 実行後は、`StopRun` が呼ばれるまで running 状態を維持する。
-- Trolley Arm には `Pick` / `Place` を追加しており、laboratory model 上の item を自サーバー location 経由で移動させる。
-  - `Pick` は指定場所から trolley arm の location へ移す。
-  - `Place` は trolley arm の location から指定場所へ移す。
+- Trolley Arm には `Pick` / `Place` を追加しており、laboratory model 上の item を自サーバー spot 経由で移動させる。
+  - `Pick` は指定場所から trolley arm の spot（`trolley-arm.gripper`）へ移す。
+  - `Place` は trolley arm の spot から指定場所へ移す。
   - 保持中 item を表す独自の内部変数は持たない。
+- **各サーバーが作用する location は `LABORATORY_MODEL_LOCATION`（`device.spot` 形式）で環境変数から受け取り、
+  それはシードが宣言した spot でなければならない**。未宣言の location を触ると `unknown_location`（404）で失敗する。
+- laboratory model への HTTP アクセスは共有パッケージ `laboratory-client` に集約している。
+  **ただし世界の意味づけ（プレートが必要・扉が開いていれば到達可能）は各サーバーの実装に残す**。
 
 ## ログ方針
 
@@ -27,5 +31,6 @@
 
 ## 統合確認
 
-- `samples/run_roundabout.py` では、`station:1` の item を trolley arm で `seal-remover -> plateloc -> thermal-cycler -> centrifuge -> station:1` と順に移動させる。
+- `samples/run_roundabout.py` では、`station.slot1` の item を trolley arm で
+  `seal-remover.stage -> plateloc.stage -> thermal-cycler.block -> centrifuge.deck -> station.slot1` と順に移動させる。
 - 初期状態の投入と最終状態の確認には laboratory model を使うが、装置間の移動そのものは SiLA2 サーバーを直接呼び出して行う。

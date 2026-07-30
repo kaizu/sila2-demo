@@ -5,8 +5,9 @@ is not part of `run_all_smoke_tests.py` (which is scoped to the six instrument s
 and is run on its own. What it pins down is the model's rule set, in the order the rules
 fire:
 
-* an untouched location reads as empty and accessible -- the location universe is not
-  pre-declared, which is why the default source below is a bare spot name no server owns;
+* a declared spot that nothing has touched reads as empty and accessible, while a spot the
+  seed never declared is a 404 -- the topology is declared, so a location does not come into
+  being by being mentioned;
 * locking a location blocks reaching into it (add, remove, move) with a 409 and a stable
   error code, while leaving any item that is already there in place;
 * an item keeps its `item_id` across a move, and the source is emptied by it;
@@ -21,6 +22,7 @@ against a stack that is mid-workflow. Exit code 0 means every rule held.
 from __future__ import annotations
 
 import argparse
+from urllib.parse import quote
 
 from common import (
     DEFAULT_LABORATORY_MODEL_URL,
@@ -35,11 +37,16 @@ from common import (
     unlock_location,
 )
 
-# Two arbitrary location names. The source is deliberately NOT one of the instrument
-# locations, to show that any string is a valid location; the destination is a station spot
-# purely for readability.
-DEFAULT_SOURCE_LOCATION = "spot-1"
-DEFAULT_DESTINATION_LOCATION = "station:1"
+# Both ends are the station's two slots: plain holding places that belong to no instrument, so
+# nothing here depends on a device being in a particular state. They have to be spots the seed
+# declared -- an undeclared location is a 404 now, not an empty one -- which is also what
+# UNDECLARED_LOCATION below exists to demonstrate.
+DEFAULT_SOURCE_LOCATION = "station.slot2"
+DEFAULT_DESTINATION_LOCATION = "station.slot1"
+# Well-formed (`device.spot`) but absent from the seed. Reaching for it is the check that the
+# world refuses to invent a place on request, which is what makes a workflow's wrong assumption
+# about the physical layout visible instead of silently satisfied.
+UNDECLARED_LOCATION = "station.slot9"
 
 
 def main() -> int:
@@ -76,8 +83,7 @@ def main() -> int:
     if reset_result.get("cleared") is not True:
         raise RuntimeError(f"Unexpected reset response: {reset_result}")
 
-    # A location nothing has ever touched must still be readable, reporting empty and
-    # accessible. This is the "no pre-declared universe" property.
+    # A declared spot nothing has touched reads as empty and accessible.
     source_before = get_location_state(
         laboratory_model_url=args.laboratory_model_url,
         location=args.source_location,
@@ -85,6 +91,19 @@ def main() -> int:
     print(f"Source before add: {source_before}")
     if source_before.get("occupied") is not False or source_before.get("accessible") is not True:
         raise RuntimeError(f"Expected empty source location before add: {source_before}")
+
+    # The other half of that property, and the reason the topology is declared at all: a
+    # well-formed location the seed does not contain is absent, not empty. A read of it is a 404
+    # rather than a fabricated empty spot, so a workflow that believes in a place the lab does
+    # not have finds out here.
+    undeclared_status, undeclared_error = expect_laboratory_model_error(
+        laboratory_model_url=args.laboratory_model_url,
+        path=f"/locations/{quote(UNDECLARED_LOCATION, safe='')}",
+        method="GET",
+    )
+    print(f"Undeclared location error: status={undeclared_status} body={undeclared_error}")
+    if undeclared_status != 404 or undeclared_error["error"]["code"] != "unknown_location":
+        raise RuntimeError(f"Unexpected undeclared-location error: {undeclared_status}, {undeclared_error}")
 
     # Lock it (what a closing door/lid does) and confirm the change is both returned by the
     # lock call and visible to a subsequent read.

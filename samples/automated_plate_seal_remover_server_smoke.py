@@ -23,7 +23,7 @@ from common import (
 # Host-side port published by docker-compose for this server, and the location it is
 # configured to act on (LABORATORY_MODEL_LOCATION in docker-compose.yml).
 DEFAULT_PORT = 50054
-DEFAULT_LOCATION = "seal-remover:1"
+DEFAULT_LOCATION = "seal-remover.stage"
 
 
 def main() -> int:

@@ -51,12 +51,12 @@ CENTRIFUGE_PORT = 50052
 # The locations each server is configured to act on (LABORATORY_MODEL_LOCATION in
 # docker-compose.yml). Source and return are deliberately the same spot: the plate ends the
 # workflow back where it began, which is what makes "roundabout" a checkable property.
-STATION_SOURCE = "station:1"
-STATION_RETURN = "station:1"
-SEAL_REMOVER_LOCATION = "seal-remover:1"
-PLATELOC_LOCATION = "plateloc:1"
-THERMAL_CYCLER_LOCATION = "thermal-cycler:1"
-CENTRIFUGE_LOCATION = "centrifuge:1"
+STATION_SOURCE = "station.slot1"
+STATION_RETURN = "station.slot1"
+SEAL_REMOVER_LOCATION = "seal-remover.stage"
+PLATELOC_LOCATION = "plateloc.stage"
+THERMAL_CYCLER_LOCATION = "thermal-cycler.block"
+CENTRIFUGE_LOCATION = "centrifuge.deck"
 
 
 def setup_initial_laboratory_state(*, laboratory_model_url: str) -> str:

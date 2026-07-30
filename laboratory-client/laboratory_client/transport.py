@@ -82,9 +82,10 @@ def get_location(
 ) -> dict[str, Any]:
     """Read one location's state (`GET /locations/{location}`).
 
-    The name goes into a path segment and real location names contain characters that are
-    not path-safe (`centrifuge:1`), so it is percent-encoded here with `safe=""` -- the
-    single place that encoding has to be right for every server.
+    A location is `device.spot` (`centrifuge.deck`) and goes into a path segment, so it is
+    percent-encoded here with `safe=""` -- the single place that encoding has to be right for
+    every server, and the reason a device or spot name containing something a path would read
+    as structure cannot address the wrong location.
     """
     return request_laboratory_model(
         base_url=base_url,

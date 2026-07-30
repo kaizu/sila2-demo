@@ -28,7 +28,7 @@ from common import (
 # Host-side port published by docker-compose for this server, and the location it is
 # configured to act on (LABORATORY_MODEL_LOCATION in docker-compose.yml).
 DEFAULT_PORT = 50055
-DEFAULT_LOCATION = "thermal-cycler:1"
+DEFAULT_LOCATION = "thermal-cycler.block"
 
 
 def main() -> int:

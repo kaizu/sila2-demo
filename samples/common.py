@@ -209,10 +209,11 @@ def ensure_item_at_location(*, laboratory_model_url: str, location: str) -> dict
 
 
 def get_location_state(*, laboratory_model_url: str, location: str) -> dict[str, Any]:
-    # Read one location's occupancy + accessibility. The name goes into a path segment and
-    # contains a colon ("centrifuge:1"), so it must be percent-encoded; safe="" also escapes
-    # any "/". This is a bare GET with no body, hence urlopen directly rather than the
-    # request helper above.
+    # Read one location's occupancy + accessibility. A location is `device.spot`
+    # ("centrifuge.deck") and goes into a path segment, so it is percent-encoded; safe=""
+    # escapes anything a device or spot name might contain that a path would otherwise read as
+    # structure. This is a bare GET with no body, hence urlopen directly rather than the request
+    # helper above.
     encoded_location = quote(location, safe="")
     with urlopen(f"{laboratory_model_url.rstrip('/')}/locations/{encoded_location}", timeout=2.0) as response:
         return json.load(response)

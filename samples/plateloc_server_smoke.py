@@ -23,7 +23,7 @@ from common import (
 # Host-side port published by docker-compose for this server, and the location it is
 # configured to act on (LABORATORY_MODEL_LOCATION in docker-compose.yml).
 DEFAULT_PORT = 50053
-DEFAULT_LOCATION = "plateloc:1"
+DEFAULT_LOCATION = "plateloc.stage"
 
 
 def main() -> int:

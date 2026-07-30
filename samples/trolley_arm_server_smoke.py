@@ -33,9 +33,9 @@ from common import (
 # TROLLEY_LOCATION is the arm's own location (LABORATORY_MODEL_LOCATION in
 # docker-compose.yml), i.e. the spot an item occupies while it is being carried.
 DEFAULT_PORT = 50057
-PICK_SOURCE = "station:1"
-TROLLEY_LOCATION = "trolley-arm:1"
-PLACE_DESTINATION = "station:2"
+PICK_SOURCE = "station.slot1"
+TROLLEY_LOCATION = "trolley-arm.gripper"
+PLACE_DESTINATION = "station.slot2"
 
 
 def main() -> int:

@@ -60,9 +60,12 @@ services:
       - "8001:8001"
     environment:
       - PYTHONUNBUFFERED=1
-      - LABORATORY_MODEL_INITIAL_STATE_FILE=/app/config/initial_state.json
+      # The seed describes the whole world at t=0: which devices exist, which spots each has,
+      # each device's resting state, and where anything already sits. Mounted read-only, and
+      # reread by `POST /reseed` -- so editing it between runs takes effect without a rebuild.
+      - LABORATORY_MODEL_SEED_FILE=/app/config/seed.yaml
     volumes:
-      - ./config/laboratory_model.initial_state.json:/app/config/initial_state.json:ro
+      - ./config/laboratory_model.seed.yaml:/app/config/seed.yaml:ro
 
   # Each service lists its environment in full (see the note on the anchors above): the
   # server type and the laboratory-model wiring as well as the instance name, because setting
@@ -83,7 +86,7 @@ services:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=MicroplateCentrifugeServer
       - LABORATORY_MODEL_URL=http://laboratory-model:8001
-      - LABORATORY_MODEL_LOCATION=centrifuge:1
+      - LABORATORY_MODEL_LOCATION=centrifuge.deck
       - SILA_SERVER_NAME=Agilent-Microplate-Centrifuge
 
   sila2-server-2:
@@ -94,7 +97,7 @@ services:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=PlateLocServer
       - LABORATORY_MODEL_URL=http://laboratory-model:8001
-      - LABORATORY_MODEL_LOCATION=plateloc:1
+      - LABORATORY_MODEL_LOCATION=plateloc.stage
       - SILA_SERVER_NAME=Agilent-PlateLoc
 
   sila2-server-3:
@@ -105,7 +108,7 @@ services:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=AutomatedPlateSealRemoverServer
       - LABORATORY_MODEL_URL=http://laboratory-model:8001
-      - LABORATORY_MODEL_LOCATION=seal-remover:1
+      - LABORATORY_MODEL_LOCATION=seal-remover.stage
       - SILA_SERVER_NAME=Azenta-Automated-Plate-Seal-Remover
 
   sila2-server-4:
@@ -116,7 +119,7 @@ services:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=AutomatedThermalCyclerServer
       - LABORATORY_MODEL_URL=http://laboratory-model:8001
-      - LABORATORY_MODEL_LOCATION=thermal-cycler:1
+      - LABORATORY_MODEL_LOCATION=thermal-cycler.block
       - SILA_SERVER_NAME=ThermoFisher-Thermal-Cycler
 
   sila2-server-5:
@@ -127,7 +130,7 @@ services:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=StationServer
       - LABORATORY_MODEL_URL=http://laboratory-model:8001
-      - LABORATORY_MODEL_LOCATION=station:1
+      - LABORATORY_MODEL_LOCATION=station.slot1
       - SILA_SERVER_NAME=Tecan-Fluent
 
   trolley-arm-server-1:
@@ -138,5 +141,5 @@ services:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=TrolleyArmServer
       - LABORATORY_MODEL_URL=http://laboratory-model:8001
-      - LABORATORY_MODEL_LOCATION=trolley-arm:1
+      - LABORATORY_MODEL_LOCATION=trolley-arm.gripper
       - SILA_SERVER_NAME=Trolley-Arm-Server
