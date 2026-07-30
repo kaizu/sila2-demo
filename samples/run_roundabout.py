@@ -1,3 +1,29 @@
+"""End-to-end sample: one plate makes a full circuit through every instrument and comes
+back to where it started.
+
+Where the per-server smoke tests check one server in isolation, this one checks that the
+servers, the trolley arm and the world model agree with each other over a whole workflow.
+It is the closest thing here to a real run, and the pattern the labcode SiLA2 flavor is
+meant to reproduce: seal removal -> sealing -> thermal cycling -> centrifugation, with the
+trolley arm carrying the plate between stations.
+
+Two properties are worth naming because they drive the ordering below:
+
+* **A closed instrument is a closed door.** A lid or door being shut makes that location
+  inaccessible in the world model, and the model refuses to move an item into or out of an
+  inaccessible location. So every transport is bracketed by the open/close commands of the
+  instrument it touches -- those calls are load-bearing, not decoration.
+* **Identity survives the circuit.** The plate is minted once at the start and its
+  `item_id` is checked again at the end, so a transport that silently recreated the item
+  instead of moving it would fail the test.
+
+The world model is used only to set the scene and to check the result; everything in
+between happens through SiLA2 commands, exactly as a workflow client would do it.
+
+Prerequisite: the compose stack is up. Exit code 0 means the circuit completed and the
+final world state was as expected.
+"""
+
 from __future__ import annotations
 
 from contextlib import ExitStack
@@ -15,12 +41,17 @@ from common import (
 )
 
 
+# Host-side ports published by docker-compose, listed in the order the workflow visits the
+# instruments (the trolley arm is used throughout).
 TROLLEY_ARM_PORT = 50057
 PLATE_SEAL_REMOVER_PORT = 50054
 PLATELOC_PORT = 50053
 THERMAL_CYCLER_PORT = 50055
 CENTRIFUGE_PORT = 50052
 
+# The locations each server is configured to act on (--laboratory-model-location in
+# docker-compose.yml). Source and return are deliberately the same spot: the plate ends the
+# workflow back where it began, which is what makes "roundabout" a checkable property.
 STATION_SOURCE = "station:1"
 STATION_RETURN = "station:1"
 SEAL_REMOVER_LOCATION = "seal-remover:1"
@@ -30,6 +61,10 @@ CENTRIFUGE_LOCATION = "centrifuge:1"
 
 
 def setup_initial_laboratory_state(*, laboratory_model_url: str) -> str:
+    """Arrange the world: wipe it, then put a single plate on the station.
+
+    Returns the id the world model minted for that plate, which the final check compares
+    against."""
     print("Preparing initial laboratory state via laboratory model.")
     reset_laboratory_model(laboratory_model_url=laboratory_model_url)
     initial_state = add_item_to_location(
@@ -42,7 +77,11 @@ def setup_initial_laboratory_state(*, laboratory_model_url: str) -> str:
 
 
 def verify_final_laboratory_state(*, laboratory_model_url: str, expected_item_id: str) -> None:
+    """Check the world after the circuit: the same plate is back on the station and no
+    instrument is still holding anything."""
     print("Verifying final laboratory state via laboratory model.")
+    # The plate must be home, and must be the *same* plate -- an id mismatch would mean a
+    # transport recreated it somewhere along the way.
     final_station = get_location_state(laboratory_model_url=laboratory_model_url, location=STATION_RETURN)
     if final_station["occupied"] is not True:
         raise RuntimeError(f"Expected an item at {STATION_RETURN}, but found: {final_station}")
@@ -51,6 +90,8 @@ def verify_final_laboratory_state(*, laboratory_model_url: str, expected_item_id
             f"Expected item {expected_item_id} at {STATION_RETURN}, but found {final_station['item_id']}"
         )
 
+    # Every instrument must be empty. This is what catches a half-completed transport: a
+    # plate left behind would otherwise go unnoticed if a duplicate reached the station.
     for location in (
         SEAL_REMOVER_LOCATION,
         PLATELOC_LOCATION,
@@ -61,11 +102,19 @@ def verify_final_laboratory_state(*, laboratory_model_url: str, expected_item_id
         if state["occupied"] is True:
             raise RuntimeError(f"Expected no item at {location}, but found: {state}")
 
+    # Full snapshot printed for the record -- including the lock states the run left behind,
+    # which the assertions above do not cover.
     snapshot = request_laboratory_model(laboratory_model_url=laboratory_model_url, path="/state")
     print(f"Final state snapshot: {snapshot}")
 
 
 def move_with_trolley(*, trolley_feature, laboratory_model_url: str, source: str, destination: str) -> None:
+    """One transport: Pick from `source`, Place at `destination`.
+
+    Pick and Place are unobservable commands, so they have completed by the time they
+    return; the reads afterwards are for the log, showing the source emptied and the
+    destination filled. Both ends must be accessible or the world model rejects the move --
+    hence the lid/door commands surrounding these calls in the sequence below."""
     print(f"Moving item with trolley arm: {source} -> {destination}")
     trolley_feature.Pick(LocationSpecifier=source)
     trolley_feature.Place(LocationSpecifier=destination)
@@ -82,6 +131,9 @@ def move_with_trolley(*, trolley_feature, laboratory_model_url: str, source: str
 
 
 def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float, laboratory_model_url: str) -> None:
+    """Drive the whole circuit over SiLA2."""
+    # All five servers are needed across the run, so their clients are opened together and
+    # held for its duration; ExitStack closes them all on the way out, including on failure.
     with ExitStack() as stack:
         centrifuge_client = stack.enter_context(connect(host, CENTRIFUGE_PORT, insecure=insecure))
         plateloc_client = stack.enter_context(connect(host, PLATELOC_PORT, insecure=insecure))
@@ -89,6 +141,8 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         thermal_cycler_client = stack.enter_context(connect(host, THERMAL_CYCLER_PORT, insecure=insecure))
         trolley_client = stack.enter_context(connect(host, TROLLEY_ARM_PORT, insecure=insecure))
 
+        # Identify every server up front: this fails fast and clearly if part of the stack
+        # is not up, rather than midway through the workflow with a plate in transit.
         print_server_identity(centrifuge_client, host=host, port=CENTRIFUGE_PORT)
         print_server_identity(plateloc_client, host=host, port=PLATELOC_PORT)
         print_server_identity(seal_remover_client, host=host, port=PLATE_SEAL_REMOVER_PORT)
@@ -101,6 +155,9 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         thermal_cycler = thermal_cycler_client.AutomatedThermalCyclerController
         trolley = trolley_client.TrolleyArmProvider
 
+        # Prepare the thermal cycler's protocol now, long before the plate reaches it: the
+        # instrument rejects StartRun unless a protocol was loaded and validated, and doing
+        # it here mirrors real preparation while the instrument is otherwise idle.
         wait_for_observable(
             thermal_cycler.Load(ProtocolFileData=b"mock protocol"),
             label="AutomatedThermalCyclerController.Load",
@@ -112,6 +169,8 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
             timeout_seconds=timeout_seconds,
         )
 
+        # Step 1 -- seal removal. Neither the station nor the seal remover has a door, so
+        # this transport needs no bracketing commands.
         move_with_trolley(
             trolley_feature=trolley,
             laboratory_model_url=laboratory_model_url,
@@ -125,6 +184,8 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         )
         print("Peel completed.")
 
+        # Step 2 -- resealing. The sealing parameters are set on the instrument first; the
+        # cycle then runs on whatever plate is present at its location.
         move_with_trolley(
             trolley_feature=trolley,
             laboratory_model_url=laboratory_model_url,
@@ -140,6 +201,9 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         )
         print("PlateLoc cycle completed.")
 
+        # Step 3 -- thermal cycling. The lid choreography is required: open before the plate
+        # can be placed inside, closed for the run, and open again afterwards so the plate
+        # can be picked back out.
         wait_for_observable(
             thermal_cycler.OpenLid(),
             label="AutomatedThermalCyclerController.OpenLid",
@@ -156,6 +220,8 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
             label="AutomatedThermalCyclerController.CloseLid",
             timeout_seconds=timeout_seconds,
         )
+        # StartRun returns while the instrument keeps running, so StopRun is what actually
+        # ends the run (this sample does not wait out a protocol).
         wait_for_observable(
             thermal_cycler.StartRun(),
             label="AutomatedThermalCyclerController.StartRun",
@@ -173,6 +239,8 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         )
         print("Thermal cycler run completed.")
 
+        # Step 4 -- centrifugation. Same door choreography as the lid above: open to load,
+        # closed to spin, open again to unload.
         wait_for_observable(
             centrifuge.OpenDoor(BucketNumber=1),
             label="MicroplateCentrifugeController.OpenDoor",
@@ -217,6 +285,7 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         )
         print("Centrifuge cycle completed.")
 
+        # Step 5 -- back to the station the plate started from, closing the circuit.
         move_with_trolley(
             trolley_feature=trolley,
             laboratory_model_url=laboratory_model_url,
@@ -227,6 +296,9 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
 
 
 def main() -> int:
+    # The trolley arm's port is the parser default because it is the one server involved in
+    # every step; the rest are fixed constants (see above) since this sample only makes
+    # sense against the compose stack as a whole.
     parser = build_parser("Run an end-to-end roundabout workflow using the SiLA2 servers directly.", TROLLEY_ARM_PORT)
     parser.add_argument(
         "--laboratory-model-url",
@@ -235,6 +307,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    # Arrange, run, then check -- the three phases are kept apart so it is clear that
+    # nothing between setup and verification touches the world model directly.
     expected_item_id = setup_initial_laboratory_state(laboratory_model_url=args.laboratory_model_url)
     run_roundabout_sequence(
         host=args.host,

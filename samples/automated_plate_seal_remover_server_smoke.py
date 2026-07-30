@@ -1,3 +1,14 @@
+"""Smoke test for the Automated Plate Seal Remover (peeler) mock, over SiLA2 directly.
+
+This server is the one that carries a *consumable*: the peel tape. GetTapeLeft is an
+observable command that returns values (the two spool reserves plus a low-tape warning),
+which makes this sample the reference case for value-returning commands -- the pattern
+labcode's partial-outputs support needs from a real instrument. The script therefore
+brackets a Peel with two GetTapeLeft reads so the consumption is visible in the output.
+
+Prerequisite: the compose stack is up. Exit code 0 means the sequence passed.
+"""
+
 from __future__ import annotations
 
 from common import (
@@ -10,6 +21,8 @@ from common import (
 )
 
 
+# Host-side port published by docker-compose for this server, and the location it is
+# configured to act on (--laboratory-model-location in docker-compose.yml).
 DEFAULT_PORT = 50054
 DEFAULT_LOCATION = "seal-remover:1"
 
@@ -28,6 +41,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    # Arrange the world: a clean model with one sealed plate in the peeler, which Peel
+    # requires to be present.
     seeded_item = ensure_item_at_location(
         laboratory_model_url=args.laboratory_model_url,
         location=args.laboratory_model_location,
@@ -37,6 +52,7 @@ def main() -> int:
     with connect(args.host, args.port, insecure=args.insecure) as client:
         print_server_identity(client, host=args.host, port=args.port)
 
+        # Baseline reserve reading, taken before the peel so the two values can be compared.
         feature = client.AutomatedPlateSealRemoverController
         tape_before = wait_for_observable(
             feature.GetTapeLeft(),
@@ -45,6 +61,8 @@ def main() -> int:
         )
         print(f"Tape before peel: {tape_before}")
 
+        # The peel itself. It also returns a value (a warning string), so its response is
+        # printed rather than discarded.
         peel_result = wait_for_observable(
             feature.Peel(BeginPeelLocation=1, AdhesionTime=1),
             label="AutomatedPlateSealRemoverController.Peel",
@@ -52,6 +70,8 @@ def main() -> int:
         )
         print(f"Peel result: {peel_result}")
 
+        # Second reading: the reserves are expected to have gone down, i.e. the command
+        # really consumed a modelled resource rather than just returning a constant.
         tape_after = wait_for_observable(
             feature.GetTapeLeft(),
             label="AutomatedPlateSealRemoverController.GetTapeLeft",
@@ -59,6 +79,8 @@ def main() -> int:
         )
         print(f"Tape after peel: {tape_after}")
 
+        # Reset recovers to Idle and refills the tape, leaving the server ready for a
+        # repeat run of this sample.
         wait_for_observable(
             feature.Reset(),
             label="AutomatedPlateSealRemoverController.Reset",

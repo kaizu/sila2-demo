@@ -1,3 +1,13 @@
+"""Run every per-server SiLA2 smoke test in one go and report which ones failed.
+
+This is the "is the stack healthy?" entry point: bring the compose stack up, run this, and
+each of the six mock instrument servers gets exercised over SiLA2. Each script is launched
+as a separate process so that one server's failure -- or a crash in its script -- cannot
+take the rest of the run down with it.
+
+Prerequisite: the compose stack is up. Exit code 0 means every script passed.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -6,6 +16,13 @@ import sys
 from pathlib import Path
 
 
+# The six mock instrument servers, one script each. Order does not matter: every script
+# wipes the laboratory model on entry and seeds only what it needs, so they neither depend
+# on nor disturb each other.
+#
+# laboratory_model_smoke.py is intentionally NOT listed here. This runner is scoped to the
+# SiLA2 servers; the world model is a separate component with no SiLA2 surface, and its
+# smoke test is run on its own.
 SCRIPTS = [
     "microplate_centrifuge_server_smoke.py",
     "plateloc_server_smoke.py",
@@ -17,6 +34,9 @@ SCRIPTS = [
 
 
 def main() -> int:
+    # Only the timeout is forwarded: the individual scripts already default to the compose
+    # stack's published ports, and overriding those per script is not something this runner
+    # needs to do (run the script directly for that).
     parser = argparse.ArgumentParser(description="Run all direct SiLA2 smoke test scripts.")
     parser.add_argument(
         "--timeout",
@@ -26,12 +46,17 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    # Resolve scripts relative to this file, so the runner works from any working directory.
     samples_dir = Path(__file__).resolve().parent
     failures: list[str] = []
 
     for script_name in SCRIPTS:
         script_path = samples_dir / script_name
+        # The banner is what makes the interleaved child output readable, since the children
+        # inherit stdout/stderr rather than having it captured.
         print(f"== Running {script_name} ==")
+        # check=False on purpose: a failing script is recorded and the run continues, so one
+        # invocation reports every broken server rather than just the first.
         result = subprocess.run(
             [sys.executable, str(script_path), "--timeout", str(args.timeout)],
             check=False,
@@ -39,6 +64,8 @@ def main() -> int:
         if result.returncode != 0:
             failures.append(script_name)
 
+    # Summary at the end, so the verdict is visible without scrolling back through the
+    # per-script output.
     if failures:
         print("Smoke test failures:")
         for script_name in failures:
