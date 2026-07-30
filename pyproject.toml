@@ -7,3 +7,24 @@ requires-python = ">=3.14"
 dependencies = [
     "sila2[codegen]>=0.14.0",
 ]
+
+# Development-only dependencies. `uv run` installs this group by default, so `uv run pytest`
+# needs no extra flags. `httpx` is not imported by the tests directly -- it is what backs
+# FastAPI's TestClient -- and `fastapi` is here because the tests exercise the laboratory
+# model in process instead of talking to its container.
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+    "fastapi>=0.115",
+]
+
+[tool.pytest.ini_options]
+# Tests live next to the component they cover (laboratory_model/tests/, and later
+# servers/<name>/tests/). Each component therefore contributes one entry here and one to
+# `pythonpath`, which is what makes `import app...` resolve without installing anything.
+testpaths = ["laboratory_model/tests"]
+pythonpath = ["laboratory_model"]
+# -ra summarises non-passing outcomes. --import-mode=importlib keeps test modules from
+# colliding once several components have a tests/ directory holding same-named files.
+addopts = "-ra --import-mode=importlib"

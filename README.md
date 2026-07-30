@@ -70,7 +70,23 @@ The `laboratory_model` service is shared by all SiLA2 servers in Docker Compose.
 
 The service loads startup state from `config/laboratory_model.initial_state.json`.
 
+## Unit tests
+
+Component-level tests that need no Docker: they exercise the code in process and finish in
+under a second. Run them from the repository root.
+
+```bash
+uv run pytest
+```
+
+They currently cover `laboratory_model` only (world rules, HTTP contract, startup seeding).
+Tests live next to the component they cover, in `laboratory_model/tests/`; the dependencies
+and pytest configuration are in the root `pyproject.toml`.
+
 ## Direct samples
+
+The scripts below talk to a running stack over the network, so they check the deployment
+rather than the rules. Bring the stack up first.
 
 Run all direct smoke tests:
 

@@ -46,9 +46,21 @@ curl -sS http://localhost:8001/health
 
 SiLA2 サーバー群への疎通は、下記「直接接続の確認」の smoke スクリプトで行う。
 
+## 単体テスト
+
+Docker を使わずコンポーネント単体を検証する pytest スイート。テストは対象コードの隣（`laboratory_model/tests/`）に置き、依存と設定はルートの `pyproject.toml` に集約する。リポジトリルートで実行する。
+
+```bash
+uv run pytest
+```
+
+現在の対象は `laboratory_model` のみ（世界モデルの規則・HTTP 契約・起動時シード）。in-process（FastAPI TestClient）で動くため、compose スタックの起動は不要で 1 秒未満で完了する。
+
+サーバー側のテストを追加する場合も同じ方針で、`servers/<name>/tests/` に置き、ルート `[tool.pytest.ini_options]` の `testpaths` と `pythonpath` に 1 行ずつ追加する。
+
 ## 直接接続の確認
 
-`sila-python` で各 SiLA2 サーバーへ直接接続する確認スクリプトは `samples/` 配下に置く。
+`sila-python` で各 SiLA2 サーバーへ直接接続する確認スクリプトは `samples/` 配下に置く。実サービスに対する疎通確認であり、上記の単体テストとは目的が異なる（前者は規則、こちらは配備）。
 
 全件実行:
 
