@@ -12,11 +12,11 @@
 # 4=Starting.
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
-from queue import Queue
 import time
-from typing import Optional, TYPE_CHECKING
+from datetime import timedelta
+from queue import Queue
+from typing import TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
@@ -47,7 +47,7 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         self.update_Status(1)
         self.update_TrolleyPosition(0)
 
-    def Status_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
+    def Status_on_subscription(self, *, metadata: MetadataDict) -> Queue[int] | None:
         # Emit the current status immediately to a new subscriber; fall back to Idle (1).
         queue = super().Status_on_subscription(metadata=metadata)
         try:
@@ -63,7 +63,7 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         self.update_Status(1)
         return Reset_Responses()
 
-    def TrolleyPosition_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
+    def TrolleyPosition_on_subscription(self, *, metadata: MetadataDict) -> Queue[int] | None:
         # Emit the current rail position immediately to a new subscriber; fall back to 0.
         queue = super().TrolleyPosition_on_subscription(metadata=metadata)
         try:

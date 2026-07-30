@@ -9,10 +9,10 @@
 # 4=Starting (note: different from the instrument controllers' 0=Not Connected/1=Idle/...).
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 from queue import Queue
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
@@ -40,7 +40,7 @@ class StationProviderImpl(StationProviderBase):
         self.update_Status(1)
         self.update_Status(3)
 
-    def Status_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
+    def Status_on_subscription(self, *, metadata: MetadataDict) -> Queue[int] | None:
         # Emit the current status immediately to a new subscriber; fall back to Idle (1).
         queue = super().Status_on_subscription(metadata=metadata)
         try:

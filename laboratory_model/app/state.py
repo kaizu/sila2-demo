@@ -18,13 +18,12 @@ Two design points worth knowing:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from threading import Lock
 from uuid import UUID, uuid4
 
 from .models import LocationState
-
 
 logger = logging.getLogger(__name__)
 

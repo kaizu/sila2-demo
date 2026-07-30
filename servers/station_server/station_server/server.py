@@ -5,7 +5,6 @@
 # model env vars are read for consistency with the other servers but are not used here.
 
 import os
-from typing import Optional
 from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
@@ -17,9 +16,9 @@ from .generated.stationprovider import StationProviderFeature
 class Server(SilaServer):
     def __init__(
         self,
-        server_uuid: Optional[UUID] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        server_uuid: UUID | None = None,
+        name: str | None = None,
+        description: str | None = None,
     ):
         # Identity from the environment; the laboratory-model vars are unused by this
         # Provider (kept for parity with the instrument servers' constructors).

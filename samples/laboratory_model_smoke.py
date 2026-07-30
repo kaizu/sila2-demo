@@ -35,7 +35,6 @@ from common import (
     unlock_location,
 )
 
-
 # Two arbitrary location names. The source is deliberately NOT one of the instrument
 # locations, to show that any string is a valid location; the destination is a station spot
 # purely for readability.

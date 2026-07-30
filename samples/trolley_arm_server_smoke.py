@@ -28,7 +28,6 @@ from common import (
     wait_for_observable,
 )
 
-
 # Host-side port published by docker-compose for this server. The transfer runs between two
 # plain station spots, chosen so it depends on no instrument being in any particular state;
 # TROLLEY_LOCATION is the arm's own location (--laboratory-model-location in

@@ -9,7 +9,6 @@
 import json
 import logging
 import os
-from typing import Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import urlopen
@@ -20,16 +19,15 @@ from sila2.server import SilaServer
 from .feature_implementations.automatedplatesealremovercontroller_impl import AutomatedPlateSealRemoverControllerImpl
 from .generated.automatedplatesealremovercontroller import AutomatedPlateSealRemoverControllerFeature
 
-
 logger = logging.getLogger(__name__)
 
 
 class Server(SilaServer):
     def __init__(
         self,
-        server_uuid: Optional[UUID] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        server_uuid: UUID | None = None,
+        name: str | None = None,
+        description: str | None = None,
     ):
         # Server identity and world-model wiring come from the environment so compose can
         # configure each instance. `laboratory_model_location` is the single location this

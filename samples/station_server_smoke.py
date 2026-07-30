@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from common import build_parser, connect, print_server_identity, wait_for_observable
 
-
 # Host-side port published by docker-compose for this server. No laboratory model options:
 # this server does not touch the world.
 DEFAULT_PORT = 50056

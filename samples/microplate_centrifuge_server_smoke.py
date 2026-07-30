@@ -21,7 +21,6 @@ from common import (
     wait_for_observable,
 )
 
-
 # Host-side port published by docker-compose for this server, and the location it is
 # configured to act on (--laboratory-model-location in docker-compose.yml). The two must
 # agree with compose or the seeded plate lands somewhere the server never looks at.

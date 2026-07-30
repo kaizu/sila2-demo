@@ -17,7 +17,6 @@ from typing import Any
 from .models import validate_location
 from .state import LaboratoryModelState
 
-
 logger = logging.getLogger(__name__)
 
 

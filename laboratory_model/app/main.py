@@ -34,7 +34,6 @@ from .models import (
 )
 from .state import LaboratoryModelError, LaboratoryModelState
 
-
 logger = logging.getLogger(__name__)
 # One process-wide world instance, shared by every request (the store is thread-safe).
 state = LaboratoryModelState()

@@ -26,7 +26,6 @@ from urllib.request import Request, urlopen
 
 from sila2.client import SilaClient
 
-
 # The stack is reached through the ports docker-compose publishes on the host, so the
 # defaults are localhost-based; --host/--port/--laboratory-model-url retarget a remote one.
 DEFAULT_HOST = "127.0.0.1"

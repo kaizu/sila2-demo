@@ -21,11 +21,11 @@
 # (immutable) Feature XML -- not a mock bug -- so only StartRun ever sets Status Running.
 from __future__ import annotations
 
+import logging
 import time
 from datetime import timedelta
-import logging
 from queue import Queue
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
@@ -76,7 +76,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         self.update_Status(0)
         self.update_Status(1)
 
-    def Status_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
+    def Status_on_subscription(self, *, metadata: MetadataDict) -> Queue[int] | None:
         # On a new subscription, immediately emit the current status so the subscriber does
         # not have to wait for the next change. Fall back to Idle (1) if none set yet.
         queue = super().Status_on_subscription(metadata=metadata)

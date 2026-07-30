@@ -14,11 +14,11 @@
 # its own XML keeps at Idle -- a per-feature exception there.)
 from __future__ import annotations
 
+import logging
 import time
 from datetime import timedelta
-import logging
 from queue import Queue
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
@@ -74,7 +74,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         self.update_Status(0)
         self.update_Status(1)
 
-    def Status_on_subscription(self, *, metadata: MetadataDict) -> Optional["Queue[int]"]:
+    def Status_on_subscription(self, *, metadata: MetadataDict) -> Queue[int] | None:
         # Emit the current status immediately to a new subscriber; fall back to Idle (1).
         queue = super().Status_on_subscription(metadata=metadata)
         try:

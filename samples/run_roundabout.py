@@ -40,7 +40,6 @@ from common import (
     wait_for_observable,
 )
 
-
 # Host-side ports published by docker-compose, listed in the order the workflow visits the
 # instruments (the trolley arm is used throughout).
 TROLLEY_ARM_PORT = 50057

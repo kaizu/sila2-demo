@@ -15,7 +15,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 # The six mock instrument servers, one script each. Order does not matter: every script
 # wipes the laboratory model on entry and seeds only what it needs, so they neither depend
 # on nor disturb each other.

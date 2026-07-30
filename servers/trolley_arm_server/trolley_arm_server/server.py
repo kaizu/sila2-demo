@@ -10,7 +10,6 @@
 import json
 import logging
 import os
-from typing import Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from uuid import UUID, uuid4
@@ -20,16 +19,15 @@ from sila2.server import SilaServer
 from .feature_implementations.trolleyarmprovider_impl import TrolleyArmProviderImpl
 from .generated.trolleyarmprovider import TrolleyArmProviderFeature
 
-
 logger = logging.getLogger(__name__)
 
 
 class Server(SilaServer):
     def __init__(
         self,
-        server_uuid: Optional[UUID] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        server_uuid: UUID | None = None,
+        name: str | None = None,
+        description: str | None = None,
     ):
         # Identity + world wiring from the environment. `laboratory_model_location` is the
         # arm's own transient holding location that items pass through during a transfer.
