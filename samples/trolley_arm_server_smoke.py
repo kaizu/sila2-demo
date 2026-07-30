@@ -30,7 +30,7 @@ from common import (
 
 # Host-side port published by docker-compose for this server. The transfer runs between two
 # plain station spots, chosen so it depends on no instrument being in any particular state;
-# TROLLEY_LOCATION is the arm's own location (--laboratory-model-location in
+# TROLLEY_LOCATION is the arm's own location (LABORATORY_MODEL_LOCATION in
 # docker-compose.yml), i.e. the spot an item occupies while it is being carried.
 DEFAULT_PORT = 50057
 PICK_SOURCE = "station:1"

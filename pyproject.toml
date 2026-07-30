@@ -43,11 +43,13 @@ pythonpath = ["laboratory_model", "laboratory-client"]
 addopts = "-ra --import-mode=importlib"
 
 # Code the sila2 generator owns is regenerated wholesale, so it is not ours to style or
-# type-check: the `generated/` trees, and each server's `__main__.py` entry point (which
-# still carries a doubled generator header and has never been hand-edited). Everything
-# else -- the feature implementations, server.py, laboratory_model/, samples/ and the
-# tests -- is hand-written and is checked. Both tools below repeat this exclusion in
-# their own syntax.
+# type-check: the `generated/` trees, and each server's `__main__.py` entry point. All six
+# copies of that entry point are byte-identical pure generator output, and the point of
+# reading the laboratory-model settings straight from the environment (in laboratory_client)
+# is to keep them that way -- they previously carried a hand-written block of CLI options,
+# which contradicted this exclusion. Everything else -- the feature implementations,
+# server.py, laboratory_model/, laboratory-client/, samples/ and the tests -- is
+# hand-written and is checked. Both tools below repeat this exclusion in their own syntax.
 [tool.ruff]
 line-length = 120
 target-version = "py314"

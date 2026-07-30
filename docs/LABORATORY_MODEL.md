@@ -30,8 +30,14 @@
 
 ## サーバー連携
 
-- 各 SiLA2 サーバーは `--laboratory-model-url` と `--laboratory-model-location` をオプションで受け取る。
-- 対応する値は `LABORATORY_MODEL_URL` と `LABORATORY_MODEL_LOCATION` に反映し、`Server` 実装から参照する。
+- 各 SiLA2 サーバーは `LABORATORY_MODEL_URL` と `LABORATORY_MODEL_LOCATION` を環境変数で受け取る
+  （`docker-compose.yml` の各サービスの `environment:` で設定する。`SILA_SERVER_NAME` / `SILA_SERVER_TYPE` と同じ経路）。
+- 読み取りと検証は共有パッケージ `laboratory-client` の `load_laboratory_model_config()` に集約し、
+  各サーバーの `Server.__init__` から呼ぶ。未設定は「world model なしで動かす」正当な構成として許容するが、
+  **設定されていて空・前後に空白がある場合は起動時エラー**とする（黙って trim しない）。
+- 以前は各サーバーの `__main__.py` に `--laboratory-model-url` / `--laboratory-model-location` オプションを
+  手書きで足し、そこから `os.environ` に書き戻していた。環境変数が実際の経路である点は変わらないため、
+  純粋な生成物である `__main__.py` を手で触る必要をなくす形に整理した（`docs/RULES.md`「静的チェック方針」参照）。
 - 現在は次のコマンドが laboratory model の item presence を参照する。
   - `MicroplateCentrifugeController.SpinCycle`
   - `PlateLocController.StartCycle`

@@ -48,7 +48,7 @@ PLATELOC_PORT = 50053
 THERMAL_CYCLER_PORT = 50055
 CENTRIFUGE_PORT = 50052
 
-# The locations each server is configured to act on (--laboratory-model-location in
+# The locations each server is configured to act on (LABORATORY_MODEL_LOCATION in
 # docker-compose.yml). Source and return are deliberately the same spot: the plate ends the
 # workflow back where it began, which is what makes "roundabout" a checkable property.
 STATION_SOURCE = "station:1"

@@ -36,8 +36,13 @@
 - 設定はルートの `pyproject.toml` に集約する（`[tool.ruff]` / `[tool.mypy]`）。実行はリポジトリルートから
   `uv run ruff check .` と `uv run mypy`。
 - **対象は手書きコードのみ**。sila2 のコードジェネレータが所有する成果物は再生成対象なので除外する:
-  `generated/` 配下、および各サーバーの `__main__.py`（生成ヘッダが二重に付いたままで一度も手を入れていない）。
-  コメント方針の「生成コードには手を入れない」と同じ線引きである。
+  `generated/` 配下、および各サーバーの `__main__.py`。コメント方針の「生成コードには手を入れない」と同じ線引きである。
+- **`__main__.py` は 6 サーバーすべてで完全に同一の純生成物に保つ**（同一性は
+  `sha256sum servers/*/*/__main__.py` で確認できる）。かつては `--laboratory-model-url` /
+  `--laboratory-model-location` オプションが手書きで足されていて、この除外の理由（生成物だから触らない）と
+  矛盾していた。現在は laboratory model の設定を環境変数で直接受け取り、読み取りと検証を共有パッケージ
+  `laboratory-client` に置くことで、`__main__.py` を手で触る必要そのものをなくしている。
+  **生成物に手を入れたくなったら、まず手書き側に寄せられないかを検討する。**
 - ruff: `line-length = 120`、lint select は sibling ofplang repos と同じ `["E","F","I","UP","B","SIM","C4","W"]`。
   **line-length だけ sibling（100）と異なる**。理由 = 本リポジトリの既存コードは codegen 由来のシグネチャが長く、
   100 に合わせると意味のない折り返しが多数発生するため。

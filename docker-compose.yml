@@ -9,7 +9,7 @@ x-sila2-server: &sila2-server
     dockerfile: servers/station_server/Dockerfile
   depends_on:
     - laboratory-model
-  command: ["python", "-m", "station_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-model-url", "http://laboratory-model:8001", "--laboratory-model-location", "station:1"]
+  command: ["python", "-m", "station_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
 
 x-trolley-arm-server: &trolley-arm-server
   build:
@@ -17,7 +17,7 @@ x-trolley-arm-server: &trolley-arm-server
     dockerfile: servers/trolley_arm_server/Dockerfile
   depends_on:
     - laboratory-model
-  command: ["python", "-m", "trolley_arm_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-model-url", "http://laboratory-model:8001", "--laboratory-model-location", "trolley-arm:1"]
+  command: ["python", "-m", "trolley_arm_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
 
 x-microplate-centrifuge-server: &microplate-centrifuge-server
   build:
@@ -25,7 +25,7 @@ x-microplate-centrifuge-server: &microplate-centrifuge-server
     dockerfile: servers/microplate_centrifuge_server/Dockerfile
   depends_on:
     - laboratory-model
-  command: ["python", "-m", "microplate_centrifuge_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-model-url", "http://laboratory-model:8001", "--laboratory-model-location", "centrifuge:1"]
+  command: ["python", "-m", "microplate_centrifuge_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
 
 x-plateloc-server: &plateloc-server
   build:
@@ -33,7 +33,7 @@ x-plateloc-server: &plateloc-server
     dockerfile: servers/plateloc_server/Dockerfile
   depends_on:
     - laboratory-model
-  command: ["python", "-m", "plateloc_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-model-url", "http://laboratory-model:8001", "--laboratory-model-location", "plateloc:1"]
+  command: ["python", "-m", "plateloc_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
 
 x-plate-seal-remover-server: &plate-seal-remover-server
   build:
@@ -41,7 +41,7 @@ x-plate-seal-remover-server: &plate-seal-remover-server
     dockerfile: servers/automated_plate_seal_remover_server/Dockerfile
   depends_on:
     - laboratory-model
-  command: ["python", "-m", "automated_plate_seal_remover_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-model-url", "http://laboratory-model:8001", "--laboratory-model-location", "seal-remover:1"]
+  command: ["python", "-m", "automated_plate_seal_remover_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
 
 x-thermal-cycler-server: &thermal-cycler-server
   build:
@@ -49,7 +49,7 @@ x-thermal-cycler-server: &thermal-cycler-server
     dockerfile: servers/automated_thermal_cycler_server/Dockerfile
   depends_on:
     - laboratory-model
-  command: ["python", "-m", "automated_thermal_cycler_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose", "--laboratory-model-url", "http://laboratory-model:8001", "--laboratory-model-location", "thermal-cycler:1"]
+  command: ["python", "-m", "automated_thermal_cycler_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
 
 services:
   laboratory-model:
@@ -65,9 +65,16 @@ services:
       - ./config/laboratory_model.initial_state.json:/app/config/initial_state.json:ro
 
   # Each service lists its environment in full (see the note on the anchors above): the
-  # server type as well as the instance name, because setting `environment:` here discards
-  # whatever the anchor declared. PYTHONUNBUFFERED is also set by every Dockerfile; it is
-  # repeated here so the compose file shows the complete runtime environment.
+  # server type and the laboratory-model wiring as well as the instance name, because setting
+  # `environment:` here discards whatever the anchor declared. PYTHONUNBUFFERED is also set by
+  # every Dockerfile; it is repeated here so the compose file shows the complete runtime
+  # environment.
+  #
+  # LABORATORY_MODEL_LOCATION is the single location each instrument acts on -- for the
+  # trolley arm, the spot an item occupies while being carried. These two used to be
+  # `--laboratory-model-*` options on the command line; the environment was always where the
+  # servers read them from, so passing them directly is what lets each `__main__.py` stay
+  # pure generator output.
   sila2-server-1:
     <<: *microplate-centrifuge-server
     ports:
@@ -75,6 +82,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=MicroplateCentrifugeServer
+      - LABORATORY_MODEL_URL=http://laboratory-model:8001
+      - LABORATORY_MODEL_LOCATION=centrifuge:1
       - SILA_SERVER_NAME=Agilent-Microplate-Centrifuge
 
   sila2-server-2:
@@ -84,6 +93,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=PlateLocServer
+      - LABORATORY_MODEL_URL=http://laboratory-model:8001
+      - LABORATORY_MODEL_LOCATION=plateloc:1
       - SILA_SERVER_NAME=Agilent-PlateLoc
 
   sila2-server-3:
@@ -93,6 +104,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=AutomatedPlateSealRemoverServer
+      - LABORATORY_MODEL_URL=http://laboratory-model:8001
+      - LABORATORY_MODEL_LOCATION=seal-remover:1
       - SILA_SERVER_NAME=Azenta-Automated-Plate-Seal-Remover
 
   sila2-server-4:
@@ -102,6 +115,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=AutomatedThermalCyclerServer
+      - LABORATORY_MODEL_URL=http://laboratory-model:8001
+      - LABORATORY_MODEL_LOCATION=thermal-cycler:1
       - SILA_SERVER_NAME=ThermoFisher-Thermal-Cycler
 
   sila2-server-5:
@@ -111,6 +126,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=StationServer
+      - LABORATORY_MODEL_URL=http://laboratory-model:8001
+      - LABORATORY_MODEL_LOCATION=station:1
       - SILA_SERVER_NAME=Tecan-Fluent
 
   trolley-arm-server-1:
@@ -120,4 +137,6 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - SILA_SERVER_TYPE=TrolleyArmServer
+      - LABORATORY_MODEL_URL=http://laboratory-model:8001
+      - LABORATORY_MODEL_LOCATION=trolley-arm:1
       - SILA_SERVER_NAME=Trolley-Arm-Server

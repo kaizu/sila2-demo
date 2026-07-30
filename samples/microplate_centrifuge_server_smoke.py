@@ -22,7 +22,7 @@ from common import (
 )
 
 # Host-side port published by docker-compose for this server, and the location it is
-# configured to act on (--laboratory-model-location in docker-compose.yml). The two must
+# configured to act on (LABORATORY_MODEL_LOCATION in docker-compose.yml). The two must
 # agree with compose or the seeded plate lands somewhere the server never looks at.
 DEFAULT_PORT = 50052
 DEFAULT_LOCATION = "centrifuge:1"

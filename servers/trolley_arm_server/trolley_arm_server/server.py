@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
 
-from laboratory_client import LaboratoryModelRequestError, request_laboratory_model
+from laboratory_client import LaboratoryModelRequestError, load_laboratory_model_config, request_laboratory_model
 
 from .feature_implementations.trolleyarmprovider_impl import TrolleyArmProviderImpl
 from .generated.trolleyarmprovider import TrolleyArmProviderFeature
@@ -37,8 +37,13 @@ class Server(SilaServer):
         # arm's own transient holding location that items pass through during a transfer.
         env_name = os.getenv("SILA_SERVER_NAME")
         env_type = os.getenv("SILA_SERVER_TYPE")
-        self.laboratory_model_url = os.getenv("LABORATORY_MODEL_URL")
-        self.laboratory_model_location = os.getenv("LABORATORY_MODEL_LOCATION")
+        # Both world-model settings come from the environment through the shared loader,
+        # which rejects a variable that is set but blank or padded. That raises here, during
+        # construction, so a misconfigured container fails at startup instead of at its
+        # first command.
+        laboratory_model = load_laboratory_model_config()
+        self.laboratory_model_url = laboratory_model.url
+        self.laboratory_model_location = laboratory_model.location
 
         if name is None:
             name = env_name if env_name else "TrolleyArmServer"
