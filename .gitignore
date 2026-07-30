@@ -20,6 +20,9 @@ sila2-test.code-workspace
 # Local artifacts
 wheels/
 *.egg-info/
+# setuptools builds in-tree when a local project is pip-installed from its directory
+# (as the server Dockerfiles do with laboratory-client), leaving this behind.
+build/
 .env
 .env.*
 scripts/
