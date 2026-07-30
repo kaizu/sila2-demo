@@ -58,6 +58,18 @@ uv run pytest
 
 サーバー側のテストを追加する場合も同じ方針で、`servers/<name>/tests/` に置き、ルート `[tool.pytest.ini_options]` の `testpaths` と `pythonpath` に 1 行ずつ追加する。
 
+## 静的チェック
+
+lint と型チェックもルートから実行する。方針と対象範囲は `docs/RULES.md`「静的チェック方針」を参照。
+
+```bash
+uv run ruff check .
+uv run ruff check --fix .
+uv run mypy
+```
+
+`generated/` と各サーバーの `__main__.py` は生成コードなので対象外（設定側で除外済み）。
+
 ## 直接接続の確認
 
 `sila-python` で各 SiLA2 サーバーへ直接接続する確認スクリプトは `samples/` 配下に置く。実サービスに対する疎通確認であり、上記の単体テストとは目的が異なる（前者は規則、こちらは配備）。

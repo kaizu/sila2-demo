@@ -17,6 +17,8 @@ dev = [
     "pytest>=8.0",
     "httpx>=0.27",
     "fastapi>=0.115",
+    "ruff>=0.16",
+    "mypy>=1.11",
 ]
 
 [tool.pytest.ini_options]
@@ -28,3 +30,43 @@ pythonpath = ["laboratory_model"]
 # -ra summarises non-passing outcomes. --import-mode=importlib keeps test modules from
 # colliding once several components have a tests/ directory holding same-named files.
 addopts = "-ra --import-mode=importlib"
+
+# Code the sila2 generator owns is regenerated wholesale, so it is not ours to style or
+# type-check: the `generated/` trees, and each server's `__main__.py` entry point (which
+# still carries a doubled generator header and has never been hand-edited). Everything
+# else -- the feature implementations, server.py, laboratory_model/, samples/ and the
+# tests -- is hand-written and is checked. Both tools below repeat this exclusion in
+# their own syntax.
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+extend-exclude = ["**/generated", "**/__main__.py"]
+
+[tool.ruff.lint]
+# Same rule set as the sibling ofplang repos: pycodestyle (E/W), pyflakes (F), import
+# order (I), pyupgrade (UP), bugbear (B), simplify (SIM) and comprehensions (C4).
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "W"]
+
+[tool.ruff.lint.isort]
+# Neither of these is installed, so ruff would otherwise file them under third-party:
+# `app` is the laboratory model's own package and `common` is the helper module the
+# sample scripts share. Declaring them keeps our imports in their own block.
+known-first-party = ["app", "common"]
+
+# Non-strict, like the sibling repos: the point is to catch real type errors, not to
+# force annotations onto every function.
+[tool.mypy]
+python_version = "3.14"
+files = ["laboratory_model", "samples", "servers"]
+exclude = "(/generated/|__main__\\.py$)"
+# sila2, typer and uvicorn ship no stubs we depend on.
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+# `exclude` only keeps the generator's output from being crawled; it is still followed
+# when our code imports it. Keep its types (our overrides are checked against them) but
+# not its errors, which are the generator's to fix, not ours.
+[[tool.mypy.overrides]]
+module = ["*.generated.*"]
+ignore_errors = true

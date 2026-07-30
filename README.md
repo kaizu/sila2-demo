@@ -83,6 +83,17 @@ They currently cover `laboratory_model` only (world rules, HTTP contract, startu
 Tests live next to the component they cover, in `laboratory_model/tests/`; the dependencies
 and pytest configuration are in the root `pyproject.toml`.
 
+## Lint and type checking
+
+```bash
+uv run ruff check .
+uv run mypy
+```
+
+Both are configured in the root `pyproject.toml` and cover the hand-written code only: the
+`generated/` trees and each server's `__main__.py` belong to the sila2 code generator and
+are excluded. See `docs/RULES.md` for the policy.
+
 ## Direct samples
 
 The scripts below talk to a running stack over the network, so they check the deployment

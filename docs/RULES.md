@@ -31,6 +31,20 @@
   で始まる純生成物）は再生成対象なので手を入れず、**手書きロジック**（feature 実装本体・`server.py` の
   laboratory_model 連携・`laboratory_model/`・`samples/`）に意図コメントを付ける。
 
+## 静的チェック方針（ruff / mypy）
+
+- 設定はルートの `pyproject.toml` に集約する（`[tool.ruff]` / `[tool.mypy]`）。実行はリポジトリルートから
+  `uv run ruff check .` と `uv run mypy`。
+- **対象は手書きコードのみ**。sila2 のコードジェネレータが所有する成果物は再生成対象なので除外する:
+  `generated/` 配下、および各サーバーの `__main__.py`（生成ヘッダが二重に付いたままで一度も手を入れていない）。
+  コメント方針の「生成コードには手を入れない」と同じ線引きである。
+- ruff: `line-length = 120`、lint select は sibling ofplang repos と同じ `["E","F","I","UP","B","SIM","C4","W"]`。
+  **line-length だけ sibling（100）と異なる**。理由 = 本リポジトリの既存コードは codegen 由来のシグネチャが長く、
+  100 に合わせると意味のない折り返しが多数発生するため。
+- mypy: 非 strict（sibling と同じ）。目的は実際の型エラーの検出であって、全関数への注釈強制ではない。
+  `generated/` は `ignore_errors = true` の override を当てる（型情報は使うが、ジェネレータの落ち度は我々の責務外）。
+- **既存違反はベースラインを作らず全部直す**。修正は挙動不変の範囲（型の絞り込み・折り返し）に限る。
+
 ## 更新ルール
 
 - 新しいルールを追加する際は、まずこの文書に追記できないかを確認する。
