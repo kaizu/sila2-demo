@@ -1,3 +1,5 @@
+[![CI](https://github.com/kaizu/sila2-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/kaizu/sila2-demo/actions/workflows/ci.yml)
+
 ## Overview
 
 This repository contains a set of mock SiLA2 instrument servers and a shared `laboratory_model` service used to simulate world state across the servers.
