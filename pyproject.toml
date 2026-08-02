@@ -40,8 +40,8 @@ dev = [
 # after the distribution (`laboratory-client`) makes that collision impossible, since a
 # hyphen cannot appear in a module name. `laboratory_model/` avoids the same trap by holding
 # a package called `app`.
-testpaths = ["laboratory_model/tests", "laboratory-client/tests"]
-pythonpath = ["laboratory_model", "laboratory-client"]
+testpaths = ["laboratory_model/tests", "laboratory-client/tests", "tools/tests"]
+pythonpath = ["laboratory_model", "laboratory-client", "tools"]
 # -ra summarises non-passing outcomes. --import-mode=importlib keeps test modules from
 # colliding once several components have a tests/ directory holding same-named files.
 addopts = "-ra --import-mode=importlib"
@@ -69,18 +69,18 @@ select = ["E", "F", "I", "UP", "B", "SIM", "C4", "W"]
 # under third-party: `app` is the laboratory model's own package, `laboratory_client` the
 # shared HTTP client the servers import, and `common` the helper module the sample scripts
 # share. Declaring them keeps our imports in their own block.
-known-first-party = ["app", "common", "laboratory_client"]
+known-first-party = ["app", "common", "laboratory_client", "slice_durations"]
 
 # Non-strict, like the sibling repos: the point is to catch real type errors, not to
 # force annotations onto every function.
 [tool.mypy]
 python_version = "3.14"
-files = ["laboratory_model", "laboratory-client", "samples", "servers"]
+files = ["laboratory_model", "laboratory-client", "samples", "servers", "tools"]
 exclude = "(/generated/|__main__\\.py$)"
 # The shared client is not installed into the dev environment, so point mypy at the
 # directory that holds the package (mirroring pytest's `pythonpath` above); without this
 # the servers' `from laboratory_client import ...` would be an unresolved import.
-mypy_path = ["laboratory-client", "laboratory_model"]
+mypy_path = ["laboratory-client", "laboratory_model", "tools"]
 # sila2, typer and uvicorn ship no stubs we depend on.
 ignore_missing_imports = true
 warn_unused_ignores = true

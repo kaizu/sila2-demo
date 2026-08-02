@@ -1,0 +1,65 @@
+# How long each mock command takes, at something like instrument speed.
+#
+# The alternative to the default `command_durations.yaml` (which reproduces the old fixed
+# 0.05 s). Select it at build time:
+#
+#     DURATIONS_FILE=command_durations.realistic.yaml docker compose build
+#
+# WHY THESE NUMBERS: labcode polls at an effective cadence of roughly 10-30 s, so a command has
+# to last seconds-to-tens-of-seconds for a dispatch -> running -> completed transition to be
+# observable at all. These durations are also deliberately *independent* of whatever labcode's
+# environment declares as its estimate: when the two disagree, the overrun or underrun is what
+# exercises labcode's replanning and its running-task margin. Making them agree by construction
+# would remove one of the reasons to run a second model of the world at all.
+#
+# !! IMPORTANT WHEN USING THIS PROFILE !!
+# The sample scripts default to a 10 s ceiling for observable commands (`samples/common.py`,
+# DEFAULT_TIMEOUT_SECONDS), which several commands here exceed. Pass a larger one:
+#
+#     uv run python samples/run_all_smoke_tests.py --timeout 120
+#
+# The format and the rules are the same as the default profile -- see the header of
+# `command_durations.yaml`. In particular, an unlisted command waits for nothing.
+
+devices:
+  centrifuge:
+    commands:
+      OpenDoor:      { duration: 3 }
+      CloseDoor:     { duration: 3 }
+      # The spin itself is the long one: this is the command a single-device process op runs.
+      SpinCycle:     { duration: 20 }
+      StopSpinCycle: { duration: 2 }
+      Home:          { duration: 5 }
+      Park:          { duration: 5 }
+      LoadPlate:     { duration: 6 }
+      UnloadPlate:   { duration: 6 }
+      Reset:         { duration: 1 }
+
+  thermal-cycler:
+    commands:
+      Load:     { duration: 1 }
+      Validate: { duration: 1 }
+      OpenLid:  { duration: 4 }
+      CloseLid: { duration: 4 }
+      # StartRun stays short on purpose: per the Feature contract the run continues after the
+      # command returns (Status stays Running until StopRun), so this is the time it takes to
+      # get the run going, not the length of the run.
+      StartRun: { duration: 2 }
+      StopRun:  { duration: 2 }
+      Reset:    { duration: 1 }
+
+  plateloc:
+    commands:
+      StartCycle: { duration: 15 }
+      StopCycle:  { duration: 2 }
+      Reset:      { duration: 1 }
+
+  seal-remover:
+    commands:
+      Peel:            { duration: 8 }
+      ResetInstrument: { duration: 2 }
+      Reset:           { duration: 1 }
+
+  trolley-arm:
+    commands:
+      SetTrolleyPosition: { duration: 3 }

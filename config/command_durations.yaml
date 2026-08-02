@@ -1,0 +1,71 @@
+# How long each mock command takes, for the whole lab in one file.
+#
+# This is the default profile and it deliberately reproduces the behaviour the servers had
+# before durations were configurable: every command takes 0.05 s. That keeps the sample scripts
+# fast and their 10 s observable-command ceiling meaningful.
+#
+# For a lab that behaves at instrument speed -- long enough for labcode's polling cadence to
+# observe dispatch -> running -> completed -- build with the other profile instead:
+#
+#     DURATIONS_FILE=command_durations.realistic.yaml docker compose build
+#
+# Each server's own section is sliced out of this file at image build time (see
+# `tools/slice_durations.py` and the builder stage in each server's Dockerfile), so a server
+# image carries only its own numbers. Editing this file therefore needs a rebuild, not just a
+# restart.
+#
+# Rules:
+#   * A command that is not listed takes NO time at all. That is a real default, not a way of
+#     catching oversights: an omitted command collapses its Running window, so a polling client
+#     may never observe the Status transition. Every command that waits is listed below for
+#     exactly that reason, and `tools/tests/test_command_durations.py` fails if this file and
+#     the server implementations ever disagree about which those are.
+#   * A device that is not listed has no timed commands at all.
+#   * Durations are seconds and may be fractional.
+#   * Each command's value is a mapping rather than a bare number so that a future jitter
+#     setting is a pure addition (`{ duration: 3, jitter: 0.15 }`) rather than a format change.
+#     Device-level settings would likewise go beside `commands:`.
+#
+# Device names match `laboratory_model.seed.yaml`. Command names are the plain SiLA2 command
+# names, without the feature prefix.
+
+devices:
+  centrifuge:
+    commands:
+      OpenDoor:      { duration: 0.05 }
+      CloseDoor:     { duration: 0.05 }
+      SpinCycle:     { duration: 0.05 }
+      StopSpinCycle: { duration: 0.05 }
+      Home:          { duration: 0.05 }
+      Park:          { duration: 0.05 }
+      LoadPlate:     { duration: 0.05 }
+      UnloadPlate:   { duration: 0.05 }
+      Reset:         { duration: 0.05 }
+
+  thermal-cycler:
+    commands:
+      Load:     { duration: 0.05 }
+      Validate: { duration: 0.05 }
+      OpenLid:  { duration: 0.05 }
+      CloseLid: { duration: 0.05 }
+      StartRun: { duration: 0.05 }
+      StopRun:  { duration: 0.05 }
+      Reset:    { duration: 0.05 }
+
+  plateloc:
+    commands:
+      StartCycle: { duration: 0.05 }
+      StopCycle:  { duration: 0.05 }
+      Reset:      { duration: 0.05 }
+
+  seal-remover:
+    commands:
+      Peel:            { duration: 0.05 }
+      ResetInstrument: { duration: 0.05 }
+      Reset:           { duration: 0.05 }
+
+  # The arm's transfer commands (Pick/Place) are absent because they wait for nothing today: a
+  # transport duration belongs with the transport milestone rather than here.
+  trolley-arm:
+    commands:
+      SetTrolleyPosition: { duration: 0.05 }
