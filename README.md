@@ -55,7 +55,9 @@ docker compose logs --tail=120
 - `specs/`
   Source SiLA feature XML definitions.
 - `config/`
-  Startup configuration, notably the laboratory model's seed file.
+  Startup configuration: the laboratory model's seed file and the command duration profiles.
+- `tools/`
+  Build-time helpers, currently the duration slicer.
 - `external/`
   Reference code and external sources that are not the direct development target.
 
@@ -82,6 +84,23 @@ The service reads its t=0 world -- topology, resting device state and initial oc
 from `config/laboratory_model.seed.yaml`. `POST /reseed` rereads it; `POST /reset` empties the
 world but keeps the topology. See `docs/LABORATORY_MODEL.md`.
 
+## Command timing
+
+How long each mock command takes is configuration, not a literal in the implementation.
+`config/command_durations.yaml` describes the whole lab and each server's section is baked into
+its image at build time. The default profile reproduces the old fixed 0.05 s; the realistic one
+runs at instrument speed, which is what makes a polling client able to observe a
+dispatch/running/completed transition.
+
+```bash
+DURATIONS_FILE=command_durations.realistic.yaml docker compose build
+docker compose up -d --force-recreate
+```
+
+A command not listed in the file waits for nothing, and a server refuses a command that arrives
+while another is still executing. See `docs/TIMING.md` for both, including why the realistic
+profile needs `--timeout` on the samples.
+
 ## Unit tests
 
 Component-level tests that need no Docker: they exercise the code in process and finish in
@@ -91,10 +110,11 @@ under a second. Run them from the repository root.
 uv run pytest
 ```
 
-They cover `laboratory_model` (world rules, HTTP contract, seeding) and the shared
-`laboratory-client` (its HTTP transport and configuration). Tests live next to the component
-they cover, in `<component>/tests/`; the dependencies and pytest configuration are in the root
-`pyproject.toml`. See `docs/RULES.md` for the policy.
+They cover `laboratory_model` (world rules, HTTP contract, seeding), the shared
+`laboratory-client` (its HTTP transport and configuration), and `tools` (the duration slicer,
+plus a check that the duration files and the server implementations agree). Tests live next to
+the component they cover, in `<component>/tests/`; the dependencies and pytest configuration are
+in the root `pyproject.toml`. See `docs/RULES.md` for the policy.
 
 ## Lint and type checking
 

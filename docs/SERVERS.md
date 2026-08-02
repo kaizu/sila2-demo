@@ -22,6 +22,12 @@
   それはシードが宣言した spot でなければならない**。未宣言の location を触ると `unknown_location`（404）で失敗する。
 - laboratory model への HTTP アクセスは共有パッケージ `laboratory-client` に集約している。
   **ただし世界の意味づけ（プレートが必要・扉が開いていれば到達可能）は各サーバーの実装に残す**。
+- 各コマンドの所要時間は `Server.sleep_for(<コマンド名>)` で引く。値はビルド時にイメージへ焼き込まれた
+  `/app/command_durations.json`（ラボ全体の `config/command_durations.yaml` から切り出したもの）にある。
+  **記述が無いコマンドは待たない**。
+- **1 サーバーで 2 つのコマンドが同時に実行されることは `Server.executing()` が拒否する**
+  （`_one_at_a_time` デコレータ）。判定は Status ではなく「実行中か」で行う。`Stop*` には付けない。
+  詳細は `docs/TIMING.md`。
 
 ## ログ方針
 
