@@ -79,9 +79,9 @@ empties the world but keeps the topology. Details in `docs/LABORATORY_MODEL.md`.
 
 How long each command takes is configuration, not a literal in the implementation.
 `config/command_durations.yaml` describes the whole lab and each server's section is baked into
-its image at build time. The default profile has every command take 0.05 s, which keeps the
-samples fast; the realistic profile runs at instrument speed, long enough for a polling client
-to observe a dispatch/running/completed transition.
+its image at build time. **The default profile is empty, so by default no command waits at all**;
+the realistic profile runs at instrument speed, long enough for a polling client to observe a
+dispatch/running/completed transition.
 
 ```bash
 DURATIONS_FILE=command_durations.realistic.yaml docker compose build

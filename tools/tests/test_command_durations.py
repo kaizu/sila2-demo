@@ -6,12 +6,14 @@ Two different things are checked here, and the second is the reason this file ex
 with an absent device or command.
 
 The coverage tests are the interesting ones. An unlisted command waits for nothing, which means
-a command that gains a wait in the implementation but is never added to the duration files
-silently loses its Running window -- a polling client would then never observe the Status
-transition, and nothing would fail. There is no way for the slicer to catch that (it cannot know
-a server's command surface), so it is caught here instead, by reading the implementations: every
-command whose body waits must appear in every profile, and nothing else may. That makes the two
-descriptions of the same fact impossible to drift apart.
+a command that gains a wait in the implementation but is never added to a timing profile silently
+loses its Running window -- a polling client would then never observe the Status transition, and
+nothing would fail. There is no way for the slicer to catch that (it cannot know a server's
+command surface), so it is caught here instead, by reading the implementations: every command
+whose body waits must appear in every profile that declares durations, and nothing else may.
+
+The default profile is exempt because it declares nothing on purpose: it is the "no waiting at
+all" configuration, and a test pins that down rather than asking it for coverage.
 """
 
 from __future__ import annotations
@@ -26,9 +28,10 @@ from slice_durations import slice_device
 
 REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parents[2]
 CONFIG_DIRECTORY = REPOSITORY_ROOT / "config"
-# Both profiles are held to the same coverage rule: they describe the same lab at different
-# speeds, so they must cover the same commands.
-PROFILES = ["command_durations.yaml", "command_durations.realistic.yaml"]
+# The default profile declares nothing (see `test_the_default_profile_configures_no_waiting`); the
+# coverage rule applies to the profiles that do declare durations.
+DEFAULT_PROFILE = "command_durations.yaml"
+TIMED_PROFILES = ["command_durations.realistic.yaml"]
 
 # Which device each server package acts as. The same mapping is written into each Dockerfile's
 # builder stage; this copy is what lets the coverage tests below read the implementations without
@@ -75,7 +78,7 @@ def load_profile(name: str) -> dict:
 # --- Coverage: the duration files and the implementations must agree. ---
 
 
-@pytest.mark.parametrize("profile", PROFILES)
+@pytest.mark.parametrize("profile", TIMED_PROFILES)
 @pytest.mark.parametrize("package", sorted(DEVICE_BY_PACKAGE))
 def test_every_waiting_command_has_a_duration(profile: str, package: str) -> None:
     # The failure this prevents: a command that waits but is unlisted takes no time, so its
@@ -87,7 +90,7 @@ def test_every_waiting_command_has_a_duration(profile: str, package: str) -> Non
     assert not missing, f"{profile} is missing durations for {device}: {sorted(missing)}"
 
 
-@pytest.mark.parametrize("profile", PROFILES)
+@pytest.mark.parametrize("profile", TIMED_PROFILES)
 @pytest.mark.parametrize("package", sorted(DEVICE_BY_PACKAGE))
 def test_no_duration_is_configured_for_a_command_that_does_not_wait(profile: str, package: str) -> None:
     # The other direction, which catches a typo in a command name and an entry left behind after
@@ -99,7 +102,7 @@ def test_no_duration_is_configured_for_a_command_that_does_not_wait(profile: str
     assert not unexpected, f"{profile} configures non-waiting commands for {device}: {sorted(unexpected)}"
 
 
-@pytest.mark.parametrize("profile", PROFILES)
+@pytest.mark.parametrize("profile", TIMED_PROFILES)
 def test_profiles_describe_only_devices_that_exist(profile: str) -> None:
     # A device name that matches no server is either a typo or a leftover; either way nothing
     # reads it. The seed file is the authority on which devices exist, so it is what this checks
@@ -112,25 +115,20 @@ def test_profiles_describe_only_devices_that_exist(profile: str) -> None:
     assert configured <= declared, f"{profile} names undeclared devices: {sorted(configured - declared)}"
 
 
-def test_the_two_profiles_cover_the_same_commands() -> None:
-    # They are two speeds of one lab, so a command added to one and forgotten in the other is a
-    # mistake even when the per-server checks above happen to pass.
-    def command_names(profile: str) -> set[tuple[str, str]]:
-        devices = load_profile(profile).get("devices") or {}
-        return {(device, command) for device, section in devices.items() for command in section.get("commands") or {}}
-
-    assert command_names(PROFILES[0]) == command_names(PROFILES[1])
+def test_the_default_profile_configures_no_waiting() -> None:
+    # The default is "the lab runs as fast as it can", expressed as a profile that declares
+    # nothing. Asserted rather than assumed, because the file existing but being empty is exactly
+    # the state that could otherwise be mistaken for an unfinished edit.
+    assert load_profile(DEFAULT_PROFILE)["devices"] == {}
 
 
-def test_the_default_profile_reproduces_the_previous_fixed_wait() -> None:
-    # The default profile exists to leave behaviour exactly as it was before durations became
-    # configurable, so that the samples stay fast and their 10 s ceiling stays meaningful.
-    devices = load_profile("command_durations.yaml")["devices"]
-    durations = {
-        entry["duration"] for section in devices.values() for entry in (section.get("commands") or {}).values()
-    }
+@pytest.mark.parametrize("package", sorted(DEVICE_BY_PACKAGE))
+def test_the_default_profile_slices_to_nothing_for_every_server(package: str) -> None:
+    # The end a server actually sees: whatever device it asks for, the default profile gives it no
+    # durations, so every command returns without waiting.
+    sliced = slice_device(load_profile(DEFAULT_PROFILE), DEVICE_BY_PACKAGE[package])
 
-    assert durations == {0.05}
+    assert sliced == {"commands": {}}
 
 
 # --- The slicer itself. ---

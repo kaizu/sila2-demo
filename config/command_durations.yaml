@@ -1,71 +1,37 @@
 # How long each mock command takes, for the whole lab in one file.
 #
-# This is the default profile and it deliberately reproduces the behaviour the servers had
-# before durations were configurable: every command takes 0.05 s. That keeps the sample scripts
-# fast and their 10 s observable-command ceiling meaningful.
+# THIS IS THE DEFAULT PROFILE AND IT IS DELIBERATELY EMPTY: with no command listed, no command
+# waits at all. The file exists rather than being absent so that "the lab runs as fast as it
+# can" reads as a decision rather than as something nobody got round to writing.
 #
-# For a lab that behaves at instrument speed -- long enough for labcode's polling cadence to
-# observe dispatch -> running -> completed -- build with the other profile instead:
+# Why empty is the right default: a mock's wait is only worth having when something is meant to
+# observe it. Nothing in `samples/` observes a Status transition mid-command, and the sample run
+# is dominated by SiLA2 connection and discovery, so a token wait per command bought nothing.
+#
+# For a lab that behaves at instrument speed -- long enough for a polling client to observe a
+# dispatch -> running -> completed transition -- build with the other profile:
 #
 #     DURATIONS_FILE=command_durations.realistic.yaml docker compose build
+#     docker compose up -d --force-recreate
 #
-# Each server's own section is sliced out of this file at image build time (see
+# Each server's own section is sliced out of the selected file at image build time (see
 # `tools/slice_durations.py` and the builder stage in each server's Dockerfile), so a server
-# image carries only its own numbers. Editing this file therefore needs a rebuild, not just a
+# image carries only its own numbers. Changing durations therefore needs a rebuild, not just a
 # restart.
 #
 # Rules:
-#   * A command that is not listed takes NO time at all. That is a real default, not a way of
-#     catching oversights: an omitted command collapses its Running window, so a polling client
-#     may never observe the Status transition. Every command that waits is listed below for
-#     exactly that reason, and `tools/tests/test_command_durations.py` fails if this file and
-#     the server implementations ever disagree about which those are.
+#   * A command that is not listed waits for nothing. Note the consequence: its Running window
+#     collapses, so a polling client cannot observe the Status transition. That is fine here --
+#     this profile wants exactly that -- but it is why `command_durations.realistic.yaml` must
+#     list every command that waits, and why `tools/tests/test_command_durations.py` checks it
+#     against the implementations.
 #   * A device that is not listed has no timed commands at all.
 #   * Durations are seconds and may be fractional.
 #   * Each command's value is a mapping rather than a bare number so that a future jitter
 #     setting is a pure addition (`{ duration: 3, jitter: 0.15 }`) rather than a format change.
 #     Device-level settings would likewise go beside `commands:`.
 #
-# Device names match `laboratory_model.seed.yaml`. Command names are the plain SiLA2 command
-# names, without the feature prefix.
+# See `command_durations.realistic.yaml` for the format in use, and `docs/TIMING.md` for the
+# whole picture.
 
-devices:
-  centrifuge:
-    commands:
-      OpenDoor:      { duration: 0.05 }
-      CloseDoor:     { duration: 0.05 }
-      SpinCycle:     { duration: 0.05 }
-      StopSpinCycle: { duration: 0.05 }
-      Home:          { duration: 0.05 }
-      Park:          { duration: 0.05 }
-      LoadPlate:     { duration: 0.05 }
-      UnloadPlate:   { duration: 0.05 }
-      Reset:         { duration: 0.05 }
-
-  thermal-cycler:
-    commands:
-      Load:     { duration: 0.05 }
-      Validate: { duration: 0.05 }
-      OpenLid:  { duration: 0.05 }
-      CloseLid: { duration: 0.05 }
-      StartRun: { duration: 0.05 }
-      StopRun:  { duration: 0.05 }
-      Reset:    { duration: 0.05 }
-
-  plateloc:
-    commands:
-      StartCycle: { duration: 0.05 }
-      StopCycle:  { duration: 0.05 }
-      Reset:      { duration: 0.05 }
-
-  seal-remover:
-    commands:
-      Peel:            { duration: 0.05 }
-      ResetInstrument: { duration: 0.05 }
-      Reset:           { duration: 0.05 }
-
-  # The arm's transfer commands (Pick/Place) are absent because they wait for nothing today: a
-  # transport duration belongs with the transport milestone rather than here.
-  trolley-arm:
-    commands:
-      SetTrolleyPosition: { duration: 0.05 }
+devices: {}
