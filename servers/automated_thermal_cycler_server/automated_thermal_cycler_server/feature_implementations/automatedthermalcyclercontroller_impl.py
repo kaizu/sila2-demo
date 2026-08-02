@@ -21,10 +21,12 @@
 # (immutable) Feature XML -- not a mock bug -- so only StartRun ever sets Status Running.
 from __future__ import annotations
 
+import functools
 import logging
+from collections.abc import Callable
 from datetime import timedelta
 from queue import Queue
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
@@ -45,6 +47,25 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _one_at_a_time(method: Callable[..., Any]) -> Callable[..., Any]:
+    """Refuse to start this command while another one is executing on this server.
+
+    A decorator rather than a `with` block inside every command body: the guard is a property of
+    the command rather than four more lines of it, and the command name comes from the method
+    itself instead of being repeated. Safe because sila2 invokes an implementation method without
+    inspecting its signature.
+
+    Commands whose job is to stop something are deliberately NOT decorated -- making them wait for
+    the thing they exist to end would be backwards."""
+
+    @functools.wraps(method)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        with self._server.executing(method.__name__):
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase):
@@ -93,6 +114,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         state = 2 if self._run_active else 0
         return GetInstrumentState_Responses(state)
 
+    @_one_at_a_time
     def Load(
         self,
         ProtocolFileData: bytes,
@@ -116,6 +138,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def Validate(
         self,
         MaxSampleVolume: float,
@@ -139,6 +162,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def OpenLid(
         self,
         *,
@@ -158,6 +182,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def CloseLid(
         self,
         *,
@@ -176,6 +201,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def StartRun(
         self,
         *,
@@ -225,6 +251,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def Reset(
         self,
         *,

@@ -11,10 +11,12 @@
 # then returns to Idle; every observable command sets Error on a failure during execution.
 from __future__ import annotations
 
+import functools
 import logging
+from collections.abc import Callable
 from datetime import timedelta
 from queue import Queue
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
@@ -31,6 +33,25 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _one_at_a_time(method: Callable[..., Any]) -> Callable[..., Any]:
+    """Refuse to start this command while another one is executing on this server.
+
+    A decorator rather than a `with` block inside every command body: the guard is a property of
+    the command rather than four more lines of it, and the command name comes from the method
+    itself instead of being repeated. Safe because sila2 invokes an implementation method without
+    inspecting its signature.
+
+    Commands whose job is to stop something are deliberately NOT decorated -- making them wait for
+    the thing they exist to end would be backwards."""
+
+    @functools.wraps(method)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        with self._server.executing(method.__name__):
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControllerBase):
@@ -62,6 +83,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
             self.update_Status(1, queue=queue)
         return queue
 
+    @_one_at_a_time
     def Peel(
         self,
         BeginPeelLocation: int,
@@ -119,6 +141,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def ResetInstrument(
         self,
         *,
@@ -138,6 +161,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def Reset(
         self,
         *,

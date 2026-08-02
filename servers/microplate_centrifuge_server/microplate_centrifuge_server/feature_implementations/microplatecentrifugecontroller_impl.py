@@ -14,10 +14,12 @@
 # its own XML keeps at Idle -- a per-feature exception there.)
 from __future__ import annotations
 
+import functools
 import logging
+from collections.abc import Callable
 from datetime import timedelta
 from queue import Queue
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sila2.server import MetadataDict, ObservableCommandInstance
 
@@ -40,6 +42,25 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _one_at_a_time(method: Callable[..., Any]) -> Callable[..., Any]:
+    """Refuse to start this command while another one is executing on this server.
+
+    A decorator rather than a `with` block inside every command body: the guard is a property of
+    the command rather than four more lines of it, and the command name comes from the method
+    itself instead of being repeated. Safe because sila2 invokes an implementation method without
+    inspecting its signature.
+
+    Commands whose job is to stop something are deliberately NOT decorated -- making them wait for
+    the thing they exist to end would be backwards."""
+
+    @functools.wraps(method)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        with self._server.executing(method.__name__):
+            return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
@@ -126,6 +147,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         logger.info("MicroplateCentrifugeController.EnumerateProfiles called")
         return EnumerateProfiles_Responses(self._profiles)
 
+    @_one_at_a_time
     def OpenDoor(
         self,
         BucketNumber: int,
@@ -148,6 +170,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def CloseDoor(
         self,
         *,
@@ -166,6 +189,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def SpinCycle(
         self,
         VelocityPercent: float,
@@ -231,6 +255,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def Reset(
         self,
         *,
@@ -249,6 +274,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def Home(
         self,
         *,
@@ -265,6 +291,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def Park(
         self,
         *,
@@ -281,6 +308,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def LoadPlate(
         self,
         BucketNumber: int,
@@ -312,6 +340,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             self.update_Status(3)  # Error
             raise
 
+    @_one_at_a_time
     def UnloadPlate(
         self,
         BucketNumber: int,

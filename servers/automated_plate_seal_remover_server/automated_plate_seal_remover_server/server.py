@@ -18,6 +18,9 @@ import json
 import logging
 import os
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
+from threading import Lock
 from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
@@ -71,6 +74,9 @@ class Server(SilaServer):
         self.laboratory_model_url = laboratory_model.url
         self.laboratory_model_location = laboratory_model.location
         self._command_durations = _load_command_durations()
+        # Guards against two commands executing at once; see `executing` below.
+        self._execution_lock = Lock()
+        self._executing_command: str | None = None
 
         if name is None:
             name = env_name if env_name else "AutomatedPlateSealRemoverServer"
@@ -90,6 +96,30 @@ class Server(SilaServer):
         self.set_feature_implementation(
             AutomatedPlateSealRemoverControllerFeature, self.automatedplatesealremovercontroller
         )
+
+    @contextmanager
+    def executing(self, command_name: str) -> Iterator[None]:
+        """Hold this server for one command, refusing a second one that arrives meanwhile.
+
+        A real instrument does one thing at a time, and these mocks keep their internal state in
+        plain unsynchronised attributes, so two commands running at once would interleave those
+        silently. Long durations make that a realistic possibility rather than a theoretical one.
+
+        The check is on "is a command executing", NOT on the Status property. StartRun
+        deliberately leaves Status at Running until StopRun, so a status-based guard would refuse
+        the very command meant to end the run."""
+        with self._execution_lock:
+            if self._executing_command is not None:
+                raise RuntimeError(
+                    f"{command_name} cannot start because {self._executing_command} is still "
+                    "executing on this server"
+                )
+            self._executing_command = command_name
+        try:
+            yield
+        finally:
+            with self._execution_lock:
+                self._executing_command = None
 
     def sleep_for(self, command_name: str) -> None:
         """Wait the nominal time this command takes on the instrument being mocked.
