@@ -2,119 +2,108 @@
 
 ## Overview
 
-This repository contains a set of mock SiLA2 instrument servers and a shared `laboratory_model` service used to simulate world state across the servers.
+A virtual laboratory: six mock SiLA2 instrument servers plus a shared `laboratory_model`
+service that simulates the physical world they act on. It exists so a workflow execution
+system can be exercised against the same SiLA2 interface real instruments expose, before
+there are real instruments.
 
-The current Docker Compose setup starts:
+Docker Compose starts:
 
-- `laboratory-model` on `localhost:8001`
-- `sila2-server-1` Microplate Centrifuge on `localhost:50052`
-- `sila2-server-2` PlateLoc on `localhost:50053`
-- `sila2-server-3` Automated Plate Seal Remover on `localhost:50054`
-- `sila2-server-4` Automated Thermal Cycler on `localhost:50055`
-- `sila2-server-5` Station on `localhost:50056`
-- `trolley-arm-server-1` Trolley Arm on `localhost:50057`
+| Service | Instrument | Host port |
+|---|---|---|
+| `laboratory-model` | shared world state | 8001 |
+| `sila2-server-1` | Microplate Centrifuge | 50052 |
+| `sila2-server-2` | PlateLoc | 50053 |
+| `sila2-server-3` | Automated Plate Seal Remover | 50054 |
+| `sila2-server-4` | Automated Thermal Cycler | 50055 |
+| `sila2-server-5` | Station | 50056 |
+| `trolley-arm-server-1` | Trolley Arm | 50057 |
 
-All SiLA2 servers are started with `--insecure` and `--verbose`.
+All SiLA2 servers start with `--insecure --verbose`.
+
+**The dependency runs one way.** This repository knows nothing about whoever drives it; a
+client depends only on "several ordinary SiLA2 services are running". `laboratory_model`
+stands in for the physical world, so **a workflow client must not talk to it** -- there is no
+such interface on a real bench. See `docs/RULES.md`.
 
 ## Start and stop
 
 Prerequisites: Docker and Docker Compose.
 
-Build and start all services:
-
 ```bash
-docker compose up --build -d
-```
-
-Stop all services:
-
-```bash
+docker compose up -d
 docker compose down
-```
-
-Check running containers:
-
-```bash
 docker compose ps
+docker compose logs --tail=120
 ```
 
-Inspect server logs:
+After changing source, build and recreate explicitly -- `up -d --build` does not reliably pick
+a change up:
 
 ```bash
-docker compose logs --tail=120
+docker compose build
+docker compose up -d --force-recreate
 ```
 
 ## Project layout
 
-- `servers/`
-  SiLA2 server packages for each mock instrument.
-- `laboratory_model/`
-  Shared state service that tracks whether locations contain an item and whether each location is accessible.
-- `samples/`
-  Direct client scripts that use `sila-python`.
-- `specs/`
-  Source SiLA feature XML definitions.
-- `config/`
-  Startup configuration: the laboratory model's seed file and the command duration profiles.
-- `tools/`
-  Build-time helpers, currently the duration slicer.
-- `external/`
-  Reference code and external sources that are not the direct development target.
+| Directory | Contents |
+|---|---|
+| `servers/` | SiLA2 server package per mock instrument |
+| `laboratory_model/` | Shared world-state service (devices, spots, opaque device state) |
+| `laboratory-client/` | Shared package the servers use to reach the world model |
+| `config/` | The world's seed and the command duration profiles |
+| `tools/` | Build-time helpers (the duration slicer) |
+| `samples/` | Client scripts that check a running stack |
+| `specs/` | Source SiLA Feature XML. **Not edited** -- a mock has to keep the real instrument's Feature to be a drop-in replacement |
+| `external/` | Reference sources, not a development target |
 
-## Laboratory model
+## World model
 
-The `laboratory_model` service is shared by all SiLA2 servers in Docker Compose.
+The world is a declared set of devices, each holding a fixed set of spots plus an opaque bag of
+state.
 
-The world is organised around devices, each holding a fixed set of spots plus an opaque bag
-of state.
+- A location is always `device.spot` (`station.slot1`, `centrifuge.deck`). There is no shorthand
+  for "the device's only spot".
+- **The topology is declared by the seed and does not grow at runtime**: addressing a device or
+  spot that was never declared is a 404, so a workflow asking to move a plate somewhere that
+  does not physically exist fails where the mistake is.
+- A spot holds at most one item and has its own `accessible` flag; the model refuses to reach
+  into a spot that is not accessible.
+- Device `state` is stored verbatim and read by no rule in the service.
 
-- A location is always `device.spot`, such as `station.slot1` or `centrifuge.deck`. There is
-  no shorthand where a device name stands in for its only spot.
-- The topology is declared by the seed and does not grow at runtime: addressing a device or
-  spot that was never declared is a 404, not an empty location.
-- A spot can hold at most one item, and has its own `accessible` flag. The model refuses to
-  reach into a spot that is not accessible.
-- Device `state` is stored verbatim and read by no rule in the service; keys like `lid` mean
-  something only to the server that wrote them.
-- Some instrument commands require an item to be present at the configured location.
-- Thermal cycler lid open/close and centrifuge door open/close update spot accessibility.
-- Trolley arm `Pick` and `Place` are modeled as moves through the trolley arm's own spot.
-
-The service reads its t=0 world -- topology, resting device state and initial occupancy --
-from `config/laboratory_model.seed.yaml`. `POST /reseed` rereads it; `POST /reset` empties the
-world but keeps the topology. See `docs/LABORATORY_MODEL.md`.
+`config/laboratory_model.seed.yaml` describes t=0. `POST /reseed` rereads it; `POST /reset`
+empties the world but keeps the topology. Details in `docs/LABORATORY_MODEL.md`.
 
 ## Command timing
 
-How long each mock command takes is configuration, not a literal in the implementation.
+How long each command takes is configuration, not a literal in the implementation.
 `config/command_durations.yaml` describes the whole lab and each server's section is baked into
-its image at build time. The default profile reproduces the old fixed 0.05 s; the realistic one
-runs at instrument speed, which is what makes a polling client able to observe a
-dispatch/running/completed transition.
+its image at build time. The default profile has every command take 0.05 s, which keeps the
+samples fast; the realistic profile runs at instrument speed, long enough for a polling client
+to observe a dispatch/running/completed transition.
 
 ```bash
 DURATIONS_FILE=command_durations.realistic.yaml docker compose build
 docker compose up -d --force-recreate
 ```
 
-A command not listed in the file waits for nothing, and a server refuses a command that arrives
-while another is still executing. See `docs/TIMING.md` for both, including why the realistic
-profile needs `--timeout` on the samples.
+A command not listed waits for nothing, and a server refuses a command arriving while another
+is still executing. Details, and why the realistic profile needs `--timeout` on the samples, in
+`docs/TIMING.md`.
 
 ## Unit tests
 
-Component-level tests that need no Docker: they exercise the code in process and finish in
-under a second. Run them from the repository root.
+Component tests that need no Docker; they run in process and finish in seconds.
 
 ```bash
 uv run pytest
 ```
 
-They cover `laboratory_model` (world rules, HTTP contract, seeding), the shared
-`laboratory-client` (its HTTP transport and configuration), and `tools` (the duration slicer,
-plus a check that the duration files and the server implementations agree). Tests live next to
-the component they cover, in `<component>/tests/`; the dependencies and pytest configuration are
-in the root `pyproject.toml`. See `docs/RULES.md` for the policy.
+They cover `laboratory_model` (world rules, HTTP contract, seeding), `laboratory-client` (HTTP
+transport and configuration) and `tools` (the duration slicer, plus a check that the duration
+files and the server implementations agree about which commands wait). Tests live next to the
+component they cover; dependencies and configuration are in the root `pyproject.toml`.
 
 ## Lint and type checking
 
@@ -123,49 +112,41 @@ uv run ruff check .
 uv run mypy
 ```
 
-Both are configured in the root `pyproject.toml` and cover the hand-written code only: the
-`generated/` trees and each server's `__main__.py` belong to the sila2 code generator and
-are excluded. See `docs/RULES.md` for the policy.
+Both are configured in the root `pyproject.toml` and cover hand-written code only: the
+`generated/` trees and each server's `__main__.py` belong to the sila2 code generator.
 
-## Direct samples
+## Samples
 
-The scripts below talk to a running stack over the network, so they check the deployment
-rather than the rules. Bring the stack up first.
-
-Run all direct smoke tests:
+These talk to a running stack over the network, so they check the deployment rather than the
+rules. Bring the stack up first. They exit non-zero on failure.
 
 ```bash
-.venv/bin/python samples/run_all_smoke_tests.py
+uv run python samples/run_all_smoke_tests.py     # all six instruments
+uv run python samples/laboratory_model_smoke.py  # the world model on its own
+uv run python samples/run_roundabout.py          # one plate around the whole lab
 ```
 
-Run the laboratory model smoke test:
+`run_roundabout.py` puts one item at `station.slot1` and moves it through
+`seal-remover.stage`, `plateloc.stage`, `thermal-cycler.block`, `centrifuge.deck` and back. The
+movement goes through the SiLA2 servers; the world model is used only to arrange the start and
+check the end.
 
-```bash
-.venv/bin/python samples/laboratory_model_smoke.py
-```
+Each sample wipes the world on entry, so do not run them against a stack that is mid-workflow.
 
-Run the trolley arm smoke test:
+## Documentation
 
-```bash
-.venv/bin/python samples/trolley_arm_server_smoke.py
-```
+| Document | Scope |
+|---|---|
+| `docs/RULES.md` | Policies, including how this repository relates to whoever drives it |
+| `docs/SUMMARY.md` | Repository overview |
+| `docs/LABORATORY_MODEL.md` | World model: state, API, seeding, lifecycle |
+| `docs/SERVERS.md` | Per-server implementation notes and the Status contract |
+| `docs/TIMING.md` | Command durations and the one-at-a-time guard |
+| `docs/OPERATIONS.md` | Runbook: start, verify, reset, switch profiles |
 
-Run the roundabout integration sample:
+## Container networking
 
-```bash
-.venv/bin/python samples/run_roundabout.py
-```
-
-`run_roundabout.py` prepares one item at `station.slot1`, then moves it through:
-
-- `seal-remover.stage`
-- `plateloc.stage`
-- `thermal-cycler.block`
-- `centrifuge.deck`
-- back to `station.slot1`
-
-The movement itself is done through the SiLA2 servers directly. The laboratory model is used only for initial setup and final verification.
-
-## Note on container networking
-
-From the host, reach each SiLA2 server on its published port (`localhost:50052`–`50057`) and the laboratory model on `localhost:8001`. For container-to-container access inside Docker Compose, use the service's container name and its internal port (`50052` for SiLA2 servers, `8001` for `laboratory-model`); the host-published ports `50053`–`50057` are for host access and are not meant to be used verbatim from inside another container.
+From the host, reach each SiLA2 server on its published port (`50052`-`50057`) and the
+laboratory model on `8001`. Between containers, use the service's container name with the
+*internal* port (`50052` for SiLA2 servers, `8001` for `laboratory-model`); the published ports
+`50053`-`50057` are for host access and are not usable verbatim from inside another container.

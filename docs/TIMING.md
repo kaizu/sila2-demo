@@ -3,14 +3,18 @@
 ## 概要
 
 各モックコマンドが「どれだけ時間をかけるか」を、実装中のリテラルではなく**設定として**持つ仕組み。
-目的は、labcode のポーリング周期で `dispatch -> running -> completed` の遷移が観測できる速度で
-ラボを動かし、**labcode の見積りと意図的にずらす**ことで replan や running-task margin を実地に叩くこと。
+目的は 2 つある。
+
+1. ワークフロー実行系のポーリング周期で `dispatch -> running -> completed` の遷移が**観測できる**速度で
+   ラボを動かすこと（実効周期は 10〜30 秒程度なので、コマンドは秒〜数十秒必要になる）。
+2. **ワークフロー側の所要時間見積りと意図的にずらせる**こと。食い違いが replan や running-task margin を
+   実地に叩く。一致させてしまうと二重の世界モデルを走らせる意味が薄れる。
 
 ## ファイルと経路
 
 | ファイル | 役割 |
 |---|---|
-| `config/command_durations.yaml` | **既定プロファイル**。全コマンド 0.05 秒＝設定化する前の挙動そのまま。sample が速いまま保たれる |
+| `config/command_durations.yaml` | **既定プロファイル**。全コマンド 0.05 秒。`samples/` が速いまま保たれ、10 秒のタイムアウトが意味を持つ |
 | `config/command_durations.realistic.yaml` | 秒〜数十秒。labcode を回すときに使う |
 | `tools/slice_durations.py` | ビルド時に device 1 台分を切り出す |
 | `tools/tests/test_command_durations.py` | 設定ファイルと実装の齟齬を検出する |
@@ -28,6 +32,7 @@ Server.sleep_for("OpenDoor")    （各コマンドが自分の名前で引く）
 - **入力が YAML なのは人が読んで書くため、出力が JSON なのはプログラムしか読まないため。**
   この分担のおかげで **PyYAML は builder ステージだけに入り、5 つのランタイムイメージには増えません**。
 - **焼き込みなので、値を変えるにはリビルドが必要**です（マウントではありません）。
+  焼き込まれた内容は `docker compose exec sila2-server-1 cat /app/command_durations.json` で確認できます。
 - プロファイルの切り替えは build arg 1 つ:
 
 ```bash

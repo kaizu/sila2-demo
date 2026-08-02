@@ -5,6 +5,30 @@
 `laboratory_model` は、Docker Compose 上の各 SiLA2 サーバーから共有参照される簡易な世界状態サービスである。
 **device 中心**の世界を持ち、各 device が固定の **spot**（item が置ける場所）集合と、無解釈の **state**（key-value）を持つ。
 
+## 誰がこのサービスを使うのか（最重要）
+
+**このサービスは実機ラボにおける「物理世界」に相当する。実機にはこれに対応するインターフェイスが存在しない。**
+
+| | 接触 | 理由 |
+|---|---|---|
+| モック SiLA2 サーバー | する | 物理効果を反映し、前提を確認するため |
+| このリポジトリの `samples/` | してよい | モック自体のテスト。意図的にモック専用で、実機に対しては走らせない |
+| **ワークフロークライアント（labcode 等）** | **してはいけない** | 実機に持ち運べる必要がある |
+| 運用者 | してよい | reality の確認と t=0 への復帰（`docs/OPERATIONS.md`） |
+
+クライアントがこのサービスを触ると、そのコードは実機に対して走らせられなくなる。触る必要が無いのは、
+**世界の側の前提の齟齬が、装置のコマンドの失敗として SiLA2 経由で届く**からである。
+
+| 齟齬 | クライアントが受け取るもの |
+|---|---|
+| 未宣言の spot を名指し | 搬送コマンドが `unknown_location` で失敗 |
+| 物が想定の場所に無い | `SpinCycle` / `StartRun` などが「requires an item at location」で失敗 |
+| 扉が閉じたまま搬送 | `destination_locked` で失敗 |
+
+したがって **spot 名の対応をクライアントが事前に検査するのは誤り**である。対応は正常動作の必要条件だが、
+動作そのものの必要条件ではなく、**使った瞬間に失敗する**。事前チェックは実世界に対応物が無く、
+忠実な実行時失敗を人工的な検査に置き換えてしまう。詳細は `docs/RULES.md`「このリポジトリと利用側の関係」。
+
 ## 状態モデル
 
 ```
@@ -15,7 +39,7 @@ device
 
 - **location は常に `device.spot`**（ドットちょうど 1 個）。device 名だけで「その device の唯一の spot」を指す省略形は無い。
   暗黙 spot の特別扱いを作ると、ストア・API・シード・各サーバー・全テストがその例外を理解しなければならなくなるため。
-  旧世代の名前（`centrifuge:1`）はドットが無いので**解釈されずに拒否される** — 改名漏れが静かに通らない。
+  ドットを含まない名前は**解釈されずに拒否される**（400 `invalid_location`）。
 - **トポロジは宣言済み**。どの device が存在し、それぞれどの spot を持つかはシード（`config/laboratory_model.seed.yaml`）が決め、
   実行中に増えない。**宣言されていない device / spot への操作は 404（`unknown_location`）**。
   これは意図した設計で、ワークフローが物理的に存在しない場所へプレートを動かそうとしたとき、
@@ -118,9 +142,6 @@ boundary:
 - HTTP の機構（URL 組み立て・JSON・タイムアウト・エラー変換）も `laboratory-client` にある。
   **世界の意味づけ（回転にはプレートが要る、開いた扉は到達可能を意味する）は各サーバーに残す** —
   world state の解釈は、それを行うコマンドに属する。
-- 以前は各サーバーの `__main__.py` に `--laboratory-model-url` / `--laboratory-model-location` オプションを
-  手書きで足し、そこから `os.environ` に書き戻していた。環境変数が実際の経路である点は変わらないため、
-  純粋な生成物である `__main__.py` を手で触る必要をなくす形に整理した（`docs/RULES.md`「静的チェック方針」参照）。
 - 現在は次のコマンドが laboratory model の item presence を参照する。
   - `MicroplateCentrifugeController.SpinCycle`
   - `PlateLocController.StartCycle`
@@ -139,13 +160,12 @@ boundary:
   本 repo は搬送中の item が物理的にどこにあるかを表現する必要があるため、**transporter も spot を持つ device として宣言する**
   （`trolley-arm.gripper`）。これは backend 側のモデリング選択である。
 
-## テスト方針
+## テスト
 
-- `samples/laboratory_model_smoke.py` は `laboratory_model` 単体の smoke test である。
-- 各 SiLA2 サーバー用の smoke test は、必要な location に item を投入してから対象コマンドを呼ぶ。
-- `samples/run_roundabout.py` は laboratory model を初期化にだけ使い、その後の移動は SiLA2 サーバーと trolley arm だけで進める。
-- これらの smoke test は `reset` を使って状態を作り直すため、並列実行すると互いに干渉しうる。
-- docker 非依存の単体テストは `laboratory_model/tests/` にある（`uv run pytest`）。詳細は `docs/RULES.md`「テスト方針」。
+- 規則そのものの検証は `laboratory_model/tests/`（docker 非依存・`uv run pytest`）。
+- 配備の確認は `samples/laboratory_model_smoke.py`（単体）と `samples/run_roundabout.py`（装置を一周）。
+  いずれも冒頭で `/reset` して**世界を破壊する**ので、並列実行や、ワークフロー実行中のスタックに対しては走らせない。
+- 方針は `docs/RULES.md`「テスト方針」、手順は `docs/OPERATIONS.md`。
 
 ### 既知の先送り
 

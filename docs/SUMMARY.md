@@ -1,22 +1,54 @@
 # プロジェクト概要
 
-このプロジェクトは、SiLA2 ベースの機器サーバー群と、それらが共有する世界状態サービス `laboratory_model` をまとめたリポジトリである。
+このリポジトリは、**モック SiLA2 機器サーバー群と、それらが共有する世界状態サービス `laboratory_model` から成る
+仮想ラボ**である。用途は、ワークフロー実行系（labcode 等）を実機の前に、実機と同じ SiLA2 インターフェイスで
+検証すること。
 
-`servers/` には、Station、Trolley Arm、Microplate Centrifuge、PlateLoc、Automated Plate Seal Remover、Automated Thermal Cycler などの SiLA2 サーバーパッケージがあり、各サーバーは生成コードと最小限の feature 実装を持つ。
+## 依存の向き
 
-ローカル実行の基本形は `docker-compose.yml` にまとまっており、複数の SiLA2 サーバーと `laboratory_model` をまとめて起動できる。
+**依存は一方向**（利用側 → このリポジトリ）。**このリポジトリは利用側を一切知らない。**
+利用側が依存するのは「一般的な SiLA2 サービスが複数立ち上がっている」という点のみである。
+`laboratory_model` は実機ラボの物理世界に相当し、**ワークフロークライアントは触ってはならない**
+（実機に対応するインターフェイスが存在しないため）。詳細は `docs/RULES.md`「このリポジトリと利用側の関係」。
 
-`laboratory_model/` には、Docker Compose 上で共有される簡易な世界状態サービスがある。**device 中心**の世界を持ち、各 device が固定の spot 集合（item の有無と access 状態）と、無解釈の state（key-value）を持つ。location は常に `device.spot` で、**トポロジはシードが宣言し、未宣言の場所への操作は 404 になる**。シードの形式や各サーバーとの連携方針は `docs/LABORATORY_MODEL.md` に整理する。
+## 構成
 
-`laboratory-client/` には、各 SiLA2 サーバーが laboratory model に到達するための共有パッケージ（HTTP 転送層と環境変数からの設定読み取り）がある。世界の意味づけは共有せず、各サーバーの実装に残す。
+| ディレクトリ | 内容 |
+|---|---|
+| `servers/` | モック SiLA2 サーバー 6 台（Station / Trolley Arm / Microplate Centrifuge / PlateLoc / Automated Plate Seal Remover / Automated Thermal Cycler）。生成コードと最小限の feature 実装 |
+| `laboratory_model/` | 共有の世界状態サービス |
+| `laboratory-client/` | サーバーが世界モデルに到達するための共有パッケージ（HTTP 転送層と環境変数からの設定読み取り）。**世界の意味づけは共有せず各サーバーに残す** |
+| `config/` | 世界のシードと、コマンド所要時間のプロファイル |
+| `tools/` | ビルド時ヘルパ（所要時間の切り出し） |
+| `samples/` | 実サービスに直接接続する確認スクリプト |
+| `specs/` | 各サーバーの SiLA Feature 定義 XML（**編集しない**。実機と同一でなければ drop-in 置換テストにならない） |
+| `external/` | 直接の開発対象ではない参考用の外部実装 |
 
-`specs/` には各サーバーの SiLA 定義 XML があり、`external/` には直接の開発対象ではない参考用の外部実装や依存ライブラリのソースコードが配置されている。
+ローカル実行の基本形は `docker-compose.yml`。手順は `docs/OPERATIONS.md`。
 
-`samples/` には、`sila-python` で各 SiLA2 サーバーへ直接接続して動作確認するための Python スクリプトを置く。単体の smoke test に加えて、`samples/run_roundabout.py` では `station.slot1` から各装置を一周して再び `station.slot1` へ戻す統合確認を行う。
+## 世界モデル
 
-各モックコマンドの所要時間は実装中のリテラルではなく設定として持ち、`config/command_durations.yaml` に
-ラボ全体を記述してビルド時に device ごとに切り出してイメージへ焼き込む。既定プロファイルは従来どおりの
-0.05 秒、realistic プロファイルは labcode のポーリング周期で遷移が観測できる秒〜数十秒。同時実行ガードと
-あわせて `docs/TIMING.md` に整理する。
+**device 中心**の世界で、各 device が固定の **spot** 集合（item の有無・access 状態）と、
+**無解釈の state**（key-value）を持つ。location は常に `device.spot`。
+**トポロジはシードが宣言し、未宣言の場所への操作は 404 になる** — ワークフローが物理的に存在しない場所へ
+物を動かそうとしたとき、その場で誤りが露見するようにするため。詳細は `docs/LABORATORY_MODEL.md`。
 
-現在の Docker Compose 設定では、各 SiLA2 サーバーは `--verbose` 付きで起動し、コマンド呼び出し時の `INFO` ログを `docker compose logs` で確認できる。
+## コマンド所要時間
+
+各モックコマンドが何秒かかるかは、実装中のリテラルではなく**設定**として持つ。
+`config/command_durations.yaml` にラボ全体を記述し、ビルド時に device ごとに切り出してイメージへ焼き込む。
+既定プロファイルは全コマンド 0.05 秒（`samples/` が速いまま保たれる）、realistic プロファイルは
+ポーリングで状態遷移が観測できる秒〜数十秒。1 サーバーで 2 つのコマンドが同時に実行されることは拒否される。
+詳細は `docs/TIMING.md`。
+
+## テスト
+
+- **単体テスト**（`uv run pytest`）= docker 非依存・CI 対象。`laboratory_model` / `laboratory-client` / `tools` を対象とする。
+- **`samples/`** = compose の実サービス相手・手元運用・CI 非対象。失敗時は非ゼロ終了する。
+  単体の smoke に加えて `samples/run_roundabout.py` が `station.slot1` から各装置を一周して戻る統合確認を行う。
+
+方針は `docs/RULES.md`「テスト方針」。
+
+## ログ
+
+各 SiLA2 サーバーは `--verbose` 付きで起動し、コマンド呼び出し時の `INFO` ログを `docker compose logs` で確認できる。
