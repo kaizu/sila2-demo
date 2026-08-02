@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from datetime import timedelta
 from queue import Queue
 from typing import TYPE_CHECKING
@@ -128,7 +127,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         self.update_Status(2)  # Running
         try:
             self._actual_temperature = self._sealing_temperature
-            time.sleep(0.05)
+            self._server.sleep_for("StartCycle")
             self._cycle_count += 1
             self.update_Status(1)  # normal -> Idle
             return StartCycle_Responses()
@@ -148,7 +147,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
         instance.begin_execution()
         try:
             self._actual_temperature = max(25, self._actual_temperature - 5)
-            time.sleep(0.05)
+            self._server.sleep_for("StopCycle")
             self.update_Status(1)  # normal -> Idle
             return StopCycle_Responses()
         except Exception:
@@ -170,7 +169,7 @@ class PlateLocControllerImpl(PlateLocControllerBase):
             self._sealing_time = 1.5
             self._actual_temperature = 25
             self._cycle_count = 0
-            time.sleep(0.05)
+            self._server.sleep_for("Reset")
             self.update_Status(1)  # reset -> Idle
             return Reset_Responses()
         except Exception:

@@ -22,7 +22,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from datetime import timedelta
 from queue import Queue
 from typing import TYPE_CHECKING
@@ -109,7 +108,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         try:
             if not ProtocolFileData:
                 raise ValueError("ProtocolFileData must not be empty")
-            time.sleep(0.05)
+            self._server.sleep_for("Load")
             self._protocol_loaded = True
             self._protocol_validated = False
             return Load_Responses()
@@ -133,7 +132,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
                 raise ValueError("MaxSampleVolume must be >= 0")
             if not self._protocol_loaded:
                 raise RuntimeError("Load must be executed before Validate in this mock")
-            time.sleep(0.05)
+            self._server.sleep_for("Validate")
             self._protocol_validated = True
             return Validate_Responses()
         except Exception:
@@ -152,7 +151,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         logger.info("AutomatedThermalCyclerController.OpenLid called")
         instance.begin_execution()
         try:
-            time.sleep(0.05)
+            self._server.sleep_for("OpenLid")
             self._server.unlock_location(command_name="AutomatedThermalCyclerController.OpenLid")
             return OpenLid_Responses()
         except Exception:
@@ -170,7 +169,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
         logger.info("AutomatedThermalCyclerController.CloseLid called")
         instance.begin_execution()
         try:
-            time.sleep(0.05)
+            self._server.sleep_for("CloseLid")
             self._server.lock_location(command_name="AutomatedThermalCyclerController.CloseLid")
             return CloseLid_Responses()
         except Exception:
@@ -197,7 +196,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self._run_active = True
             self.update_ElapsedTime("00:00:00")
             self.update_RemainingTime("00:02:00")
-            time.sleep(0.05)
+            self._server.sleep_for("StartRun")
             return StartRun_Responses()
         except Exception:
             self._run_active = False
@@ -219,7 +218,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self._run_active = False
             self.update_ElapsedTime("00:00:10")
             self.update_RemainingTime("00:00:00")
-            time.sleep(0.05)
+            self._server.sleep_for("StopRun")
             self.update_Status(1)  # normal completion -> Idle
             return StopRun_Responses()
         except Exception:
@@ -243,7 +242,7 @@ class AutomatedThermalCyclerControllerImpl(AutomatedThermalCyclerControllerBase)
             self._run_active = False
             self.update_ElapsedTime("00:00:00")
             self.update_RemainingTime("00:00:00")
-            time.sleep(0.05)
+            self._server.sleep_for("Reset")
             self.update_Status(1)  # reset -> Idle
             return Reset_Responses()
         except Exception:

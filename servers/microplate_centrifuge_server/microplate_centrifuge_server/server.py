@@ -10,9 +10,15 @@
 # The HTTP mechanics live in the shared `laboratory_client`; what the world means -- that a
 # spin needs a plate, that an open door is a reachable location -- stays here, because the
 # interpretation of world state belongs to the command that performs it.
+#
+# It also owns how long each command waits: the durations are sliced out of the lab-wide
+# `config/command_durations.yaml` at image build time and read here, so a command's nominal time
+# is configuration rather than a literal buried in the implementation.
 
+import json
 import logging
 import os
+import time
 from uuid import UUID, uuid4
 
 from sila2.server import SilaServer
@@ -28,6 +34,27 @@ from .feature_implementations.microplatecentrifugecontroller_impl import Micropl
 from .generated.microplatecentrifugecontroller import MicroplateCentrifugeControllerFeature
 
 logger = logging.getLogger(__name__)
+
+# --- Command durations. Baked into the image at build time by slicing this device's section out
+# --- of the lab-wide duration file (see `tools/slice_durations.py`); a command that is not listed
+# --- there waits for nothing.
+COMMAND_DURATIONS_FILE = os.getenv("COMMAND_DURATIONS_FILE", "/app/command_durations.json")
+
+
+def _load_command_durations(path: str = COMMAND_DURATIONS_FILE) -> dict[str, float]:
+    """Read this server's per-command durations, keyed by plain SiLA2 command name.
+
+    A missing file is not an error: a server started outside its image has nothing baked in, and
+    the rule for a command with no entry is already "do not wait"."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            document = json.load(handle)
+    except FileNotFoundError:
+        logger.info("No command duration file at %s; commands will not wait", path)
+        return {}
+
+    commands = document.get("commands") or {}
+    return {name: float(entry.get("duration", 0.0)) for name, entry in commands.items()}
 
 
 class Server(SilaServer):
@@ -49,6 +76,7 @@ class Server(SilaServer):
         laboratory_model = load_laboratory_model_config()
         self.laboratory_model_url = laboratory_model.url
         self.laboratory_model_location = laboratory_model.location
+        self._command_durations = _load_command_durations()
 
         if name is None:
             name = env_name if env_name else "MicroplateCentrifugeServer"
@@ -66,6 +94,16 @@ class Server(SilaServer):
 
         self.microplatecentrifugecontroller = MicroplateCentrifugeControllerImpl(self)
         self.set_feature_implementation(MicroplateCentrifugeControllerFeature, self.microplatecentrifugecontroller)
+
+    def sleep_for(self, command_name: str) -> None:
+        """Wait the nominal time this command takes on the instrument being mocked.
+
+        Called by the feature implementation where a fixed sleep used to be. A command with no
+        configured duration returns at once -- which also collapses its Running window, so a
+        polling client would not observe the Status transition."""
+        duration = self._command_durations.get(command_name, 0.0)
+        if duration > 0:
+            time.sleep(duration)
 
     def require_item_at_location(self, *, command_name: str) -> None:
         """Precondition check: fail unless an item is present at this server's location.

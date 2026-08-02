@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from datetime import timedelta
 from queue import Queue
 from typing import TYPE_CHECKING
@@ -88,18 +87,22 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         if bucket not in (1, 2):
             raise ValueError("BucketNumber must be 1 or 2")
 
-    def _begin_running(self, instance: ObservableCommandInstance) -> None:
+    def _begin_running(self, instance: ObservableCommandInstance, command_name: str) -> None:
         # Start an actuating command: enter Running (2) for the duration of the motion
         # (spec: "Status while this command is running: Running").
+        #
+        # The command name is passed in because every actuating command on this instrument goes
+        # through here: the wait belongs to the individual command, not to the helper, so each one
+        # can be given its own duration (a spin is not a door opening).
         instance.begin_execution()
         self.update_Status(2)
-        time.sleep(0.05)
+        self._server.sleep_for(command_name)
 
-    def _begin_quiet(self, instance: ObservableCommandInstance) -> None:
+    def _begin_quiet(self, instance: ObservableCommandInstance, command_name: str) -> None:
         # Start a command that keeps its start status (spec: "same as start"): Stop/Reset
         # do not assert Running.
         instance.begin_execution()
-        time.sleep(0.05)
+        self._server.sleep_for(command_name)
 
     # --- Version getters: static mock readouts, no status effect. ---
 
@@ -135,7 +138,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         # is validated before execution starts (a bad value rejects without faulting).
         logger.info("MicroplateCentrifugeController.OpenDoor called: bucket_number=%s", BucketNumber)
         self._validate_bucket(BucketNumber)
-        self._begin_running(instance)
+        self._begin_running(instance, "OpenDoor")
         try:
             self._door_bucket = BucketNumber
             self._server.unlock_location(command_name="MicroplateCentrifugeController.OpenDoor")
@@ -153,7 +156,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
     ) -> CloseDoor_Responses:
         # Inverse of OpenDoor: a closed door makes the location inaccessible.
         logger.info("MicroplateCentrifugeController.CloseDoor called")
-        self._begin_running(instance)
+        self._begin_running(instance, "CloseDoor")
         try:
             self._door_bucket = 0
             self._server.lock_location(command_name="MicroplateCentrifugeController.CloseDoor")
@@ -201,7 +204,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         if Time < 0:
             raise ValueError("Time must be >= 0")
         self._server.require_item_at_location(command_name="MicroplateCentrifugeController.SpinCycle")
-        self._begin_running(instance)
+        self._begin_running(instance, "SpinCycle")
         try:
             self.update_Status(1)  # normal -> Idle
             return SpinCycle_Responses()
@@ -220,7 +223,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         # returns to Idle on success / Error on failure.
         logger.info("MicroplateCentrifugeController.StopSpinCycle called: bucket_number=%s", BucketNumber)
         self._validate_bucket(BucketNumber)
-        self._begin_quiet(instance)
+        self._begin_quiet(instance, "StopSpinCycle")
         try:
             self.update_Status(1)  # normal -> Idle
             return StopSpinCycle_Responses()
@@ -237,7 +240,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
         # Recover to Idle (e.g. from Error). Keeps its start status during execution, then
         # Idle on success / Error on failure. Clears the door state.
         logger.info("MicroplateCentrifugeController.Reset called")
-        self._begin_quiet(instance)
+        self._begin_quiet(instance, "Reset")
         try:
             self._door_bucket = 0
             self.update_Status(1)  # reset -> Idle
@@ -254,7 +257,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
     ) -> Home_Responses:
         # Actuating motion command (return the rotor to its home position).
         logger.info("MicroplateCentrifugeController.Home called")
-        self._begin_running(instance)
+        self._begin_running(instance, "Home")
         try:
             self.update_Status(1)  # normal -> Idle
             return Home_Responses()
@@ -270,7 +273,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
     ) -> Park_Responses:
         # Actuating motion command (move the rotor to its park position).
         logger.info("MicroplateCentrifugeController.Park called")
-        self._begin_running(instance)
+        self._begin_running(instance, "Park")
         try:
             self.update_Status(1)  # normal -> Idle
             return Park_Responses()
@@ -301,7 +304,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             Options,
         )
         self._validate_bucket(BucketNumber)
-        self._begin_running(instance)
+        self._begin_running(instance, "LoadPlate")
         try:
             self.update_Status(1)  # normal -> Idle
             return LoadPlate_Responses()
@@ -332,7 +335,7 @@ class MicroplateCentrifugeControllerImpl(MicroplateCentrifugeControllerBase):
             Options,
         )
         self._validate_bucket(BucketNumber)
-        self._begin_running(instance)
+        self._begin_running(instance, "UnloadPlate")
         try:
             self.update_Status(1)  # normal -> Idle
             return UnloadPlate_Responses()

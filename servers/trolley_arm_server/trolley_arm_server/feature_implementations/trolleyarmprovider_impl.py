@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from datetime import timedelta
 from queue import Queue
 from typing import TYPE_CHECKING
@@ -87,7 +86,7 @@ class TrolleyArmProviderImpl(TrolleyArmProviderBase):
         self.update_Status(2)
         try:
             # Keep Running long enough to be observable by polling clients.
-            time.sleep(0.05)
+            self.parent_server.sleep_for("SetTrolleyPosition")
             self.update_TrolleyPosition(Position)
             self.update_Status(1)  # normal -> Idle
             return SetTrolleyPosition_Responses()

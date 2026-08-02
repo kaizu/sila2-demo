@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from datetime import timedelta
 from queue import Queue
 from typing import TYPE_CHECKING
@@ -89,7 +88,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         instance.begin_execution()
         self.update_Status(2)  # Running
         try:
-            time.sleep(0.05)
+            self._server.sleep_for("Peel")
             self._supply_spool_remaining = max(0, self._supply_spool_remaining - 1)
             self._takeup_spool_remaining = max(0, self._takeup_spool_remaining - 1)
             warning = "LOW_TAPE" if self._supply_spool_remaining < 25 else ""
@@ -132,7 +131,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         instance.begin_execution()
         self.update_Status(2)  # Running
         try:
-            time.sleep(0.05)
+            self._server.sleep_for("ResetInstrument")
             self.update_Status(1)  # normal -> Idle
             return ResetInstrument_Responses("")
         except Exception:
@@ -150,7 +149,7 @@ class AutomatedPlateSealRemoverControllerImpl(AutomatedPlateSealRemoverControlle
         logger.info("AutomatedPlateSealRemoverController.Reset called")
         instance.begin_execution()
         try:
-            time.sleep(0.05)
+            self._server.sleep_for("Reset")
             self._supply_spool_remaining = 1200
             self._takeup_spool_remaining = 1200
             self.update_Status(1)  # reset -> Idle
