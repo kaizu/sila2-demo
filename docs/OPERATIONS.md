@@ -46,6 +46,15 @@ curl -sS http://localhost:8001/state           # 全 device の spot と opaque 
 curl -sS http://localhost:8001/devices/thermal-cycler/state
 ```
 
+### シードとワークフローの boundary は同じ t=0 を記述している
+
+**同期を保つ機構は無い。** ワークフロー側の boundary が入力に使う spot に、このシードが物を置いていなければ、
+その run は最初の搬送で `source_empty` になる。**名前の対応はクライアントのスクリプトで翻訳できるが、
+「物がそこにあるか」は翻訳では直らない** — 揃えるべきはこちらである（`docs/LABORATORY_MODEL.md`）。
+
+シードは boundary と同じ形にしてあるので、正常系ではワークフローの boundary をそのまま写せる。
+どちらかを編集したら、もう一方も見ること。
+
 ### run の合間に t=0 へ戻す
 
 ワークフローを 1 回走らせると物は移動している。**次の run の前に世界を戻すのは運用者の仕事**である
