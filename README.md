@@ -56,7 +56,7 @@ docker compose up -d --force-recreate
 | `tools/` | Build-time helpers (the duration slicer) |
 | `samples/` | Client scripts that check a running stack |
 | `specs/` | Source SiLA Feature XML. **Not edited** -- a mock has to keep the real instrument's Feature to be a drop-in replacement |
-| `external/` | Reference sources, not a development target |
+| `external/` | Optional, local only (`.gitignore`d): reference sources kept to read, never a development target. Absent from a fresh clone |
 
 ## World model
 
