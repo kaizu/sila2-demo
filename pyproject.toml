@@ -1,7 +1,13 @@
+# The workspace root. It is not a distribution anyone installs -- it exists so `uv`
+# has one project to resolve the dev environment and the tooling config against
+# (the installable pieces are `laboratory_model/` and `laboratory-client/`, each
+# with its own pyproject). The name and version are therefore local identity only;
+# `version` is kept as a placeholder because the repository is versioned by git tag
+# (v0.3.0 at the time of writing), not by this field.
 [project]
-name = "sila2-test"
+name = "ofplang-sila2-backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "A virtual laboratory of mock SiLA2 instrument servers over a shared world-state service."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
