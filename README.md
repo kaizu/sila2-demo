@@ -9,7 +9,9 @@ expose, before there are real instruments.
 
 The transporter, **Ardea**, mocks a machine that exists: it serves that machine's own nine
 Feature definitions unchanged, and implements the one command a workflow needs from a
-transporter (`LabwareService.Transfer`). See `docs/SERVERS.md`.
+transporter (`LabwareService.Transfer`). Like the machine, it is called with station *names* --
+`Base1` and `Base2` are the two plain plate-holding stations, `Base3`-`Base6` the four
+instruments -- which its station map turns into places in this world. See `docs/SERVERS.md`.
 
 Docker Compose starts:
 

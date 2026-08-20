@@ -58,6 +58,21 @@ PLATELOC_LOCATION = "plateloc.stage"
 THERMAL_CYCLER_LOCATION = "thermal-cycler.block"
 CENTRIFUGE_LOCATION = "centrifuge.deck"
 
+# Ardea's own name for each of those places. A transport names STATIONS, not locations, because
+# that is what the real machine takes -- the server's station map (ARDEA_STATIONS in
+# docker-compose.yml) is what pairs the two. This script needs both: the name to ask for the
+# move, and the location to check afterwards that the plate is where it should be. Keeping the
+# pairs here rather than asking the server is deliberate -- a map that stopped matching the
+# bench then shows up as a plate landing somewhere this script does not expect.
+ARDEA_STATION_BY_LOCATION = {
+    STATION_SOURCE: "Base1",            # a plain plate-holding station
+    "station.slot2": "Base2",           # the other one; unused by this circuit
+    SEAL_REMOVER_LOCATION: "Base3",     # peeler
+    PLATELOC_LOCATION: "Base4",         # sealer
+    CENTRIFUGE_LOCATION: "Base5",       # plate centrifuge
+    THERMAL_CYCLER_LOCATION: "Base6",   # thermal cycler
+}
+
 
 def setup_initial_laboratory_state(*, laboratory_model_url: str) -> str:
     """Arrange the world: wipe it, then put a single plate on the station.
@@ -110,7 +125,10 @@ def verify_final_laboratory_state(*, laboratory_model_url: str, expected_item_id
 def move_with_ardea(
     *, ardea_feature, laboratory_model_url: str, source: str, destination: str, timeout_seconds: float
 ) -> None:
-    """One transport: a single `Transfer` from `source` to `destination`.
+    """One transport: a single `Transfer` from `source` to `destination`, given as locations.
+
+    The locations are translated to Ardea's station names here, so every caller below can go on
+    naming the place the plate is going rather than the machine's label for it.
 
     Ardea drives the whole route in one command -- carriage to the source, pick, carriage to
     the destination, put -- where the trolley arm this replaced needed a Pick and a Place.
@@ -118,9 +136,11 @@ def move_with_ardea(
     the reads afterwards are for the log, showing the source emptied and the destination
     filled. Both ends must be accessible or the world model rejects the move -- hence the
     lid/door commands surrounding these calls in the sequence below."""
-    print(f"Moving item with Ardea: {source} -> {destination}")
+    source_station = ARDEA_STATION_BY_LOCATION[source]
+    destination_station = ARDEA_STATION_BY_LOCATION[destination]
+    print(f"Moving item with Ardea: {source_station} ({source}) -> {destination_station} ({destination})")
     responses = wait_for_observable(
-        ardea_feature.Transfer(SourceStation=source, DestinationStation=destination),
+        ardea_feature.Transfer(SourceStation=source_station, DestinationStation=destination_station),
         label="LabwareService.Transfer",
         timeout_seconds=timeout_seconds,
     )

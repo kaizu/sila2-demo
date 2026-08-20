@@ -135,6 +135,20 @@ services:
   # server's description is where being a mock is stated. The published port is the one the
   # trolley arm used before it, so anything already pointed at the lab's transporter still
   # finds it -- what changed is the Feature it answers with.
+  #
+  # ARDEA_STATIONS is the station map: which of the machine's station names means which place in
+  # this world. A workflow names stations, not locations, because that is what the real Ardea
+  # takes -- so this variable is what lets a workflow written here be pointed at the machine.
+  # It mirrors the real bench, where every station holds exactly one plate:
+  #
+  #     Base1, Base2   the two plain plate-holding stations
+  #     Base3          peeler            (the seal remover)
+  #     Base4          sealer            (PlateLoc)
+  #     Base5          plate centrifuge
+  #     Base6          thermal cycler
+  #
+  # The locations on the right must be spots the seed declares, and the map is read at startup:
+  # editing it takes a `--force-recreate`, not a rebuild. See the ardea server's `stations.py`.
   ardea-server-1:
     <<: *ardea-server
     ports:
@@ -145,3 +159,4 @@ services:
       - LABORATORY_MODEL_URL=http://laboratory-model:8001
       - LABORATORY_MODEL_LOCATION=ardea.gripper
       - SILA_SERVER_NAME=Ardea
+      - ARDEA_STATIONS=Base1=station.slot1,Base2=station.slot2,Base3=seal-remover.stage,Base4=plateloc.stage,Base5=centrifuge.deck,Base6=thermal-cycler.block

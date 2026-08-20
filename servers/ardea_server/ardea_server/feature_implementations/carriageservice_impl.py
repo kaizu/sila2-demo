@@ -3,9 +3,9 @@
 # Hand-written mock of Ardea's CarriageService, the travel carriage the arm rides on. Its two
 # properties answer; its one command does not.
 #
-# `StationNames` is the world model's declared topology minus the arm's own holding spot,
-# which is exactly the set of names `LabwareService.Transfer` accepts. On the machine the same
-# list comes from the motion configuration.
+# `StationNames` is the station map's names (`Base1`, `Base2`, ... -- see `stations.py`), which
+# is exactly the set `LabwareService.Transfer` accepts. On the machine the same list comes from
+# the motion configuration, and it is likewise fixed for the server's lifetime.
 #
 # `CarriagePosition` is a synthetic position -- the station's index in that list times a fixed
 # pitch (`Server.station_position_mm`). It is published by `Transfer` as the carriage reaches
@@ -62,7 +62,7 @@ class CarriageServiceImpl(CarriageServiceBase):
         return queue
 
     def get_StationNames(self, *, metadata: MetadataDict) -> list[str]:
-        return self.parent_server.station_locations(command_name=f"{_FEATURE}.StationNames")
+        return self.parent_server.station_names()
 
     def MoveCarriage(
         self,

@@ -8,10 +8,11 @@ Four things are exercised:
 
 * the two `CarriageService` properties -- `StationNames` lists what `Transfer` will accept, and
   `CarriagePosition` is read before and after so the carriage is seen to move;
-* `LabwareService.Transfer`, which carries the plate from one station to another. In the world
-  model that is two hops rather than one (source -> the arm's own location -> destination), but
-  unlike the trolley arm this replaced, the machine does both inside a single command, so a
-  client makes one call where it used to make two;
+* `LabwareService.Transfer`, which carries the plate from one station to another. It is called
+  with the machine's own station names (`Base1`, `Base2`, ...), which the server's station map
+  resolves to places in the world. In the world model that is two hops rather than one (source
+  -> the arm's own location -> destination), but unlike the trolley arm this replaced, the
+  machine does both inside a single command, so a client makes one call where it made two;
 * `LabwareService.LightIsOn`, the one reading here that comes from the world model's opaque
   device state rather than from where anything sits;
 * a refusal. Every command but `Transfer` is unimplemented by design, and this checks that one
@@ -42,14 +43,24 @@ from common import (
     wait_for_observable,
 )
 
-# Host-side port published by docker-compose for this server. The transfer runs between two
-# plain station spots, chosen so it depends on no instrument being in any particular state;
-# ARM_LOCATION is Ardea's own location (LABORATORY_MODEL_LOCATION in docker-compose.yml), i.e.
-# the spot a plate occupies while it is being carried.
+# Host-side port published by docker-compose for this server.
+#
+# Ardea takes STATION NAMES, not locations: `Base1`, `Base2`, ... are the machine's own names
+# for its stations, and the server's station map (ARDEA_STATIONS in docker-compose.yml) is what
+# turns each one into a place in the world. This sample therefore needs both -- the names to
+# call `Transfer` with, and the locations to check the world afterwards -- so it keeps its own
+# copy of the pair. That the copies must agree is the point: a map that stopped matching the
+# bench would show up here as a transfer landing somewhere this script does not expect.
+#
+# The two chosen stations are the plain plate-holding ones, so the transfer depends on no
+# instrument being in any particular state. ARM_LOCATION is Ardea's own location
+# (LABORATORY_MODEL_LOCATION), i.e. the spot a plate occupies while it is being carried.
 DEFAULT_PORT = 50057
+TRANSFER_SOURCE_STATION = "Base1"
 TRANSFER_SOURCE = "station.slot1"
-ARM_LOCATION = "ardea.gripper"
+TRANSFER_DESTINATION_STATION = "Base2"
 TRANSFER_DESTINATION = "station.slot2"
+ARM_LOCATION = "ardea.gripper"
 
 LABEL = "LabwareService.Transfer"
 
@@ -99,17 +110,19 @@ def main() -> int:
         reset_laboratory_model(laboratory_model_url=args.laboratory_model_url)
         add_item_to_location(laboratory_model_url=args.laboratory_model_url, location=TRANSFER_SOURCE)
 
-        # The stations, as the server reports them. On the real machine this list comes from the
-        # motion configuration; here it is the world's declared topology minus the arm's own
-        # spot -- which is exactly the set of names Transfer accepts, so the check below is
-        # against the server's own vocabulary rather than this script's guess at it.
+        # The stations, as the server reports them: the machine's own names, which on the real
+        # Ardea come from its motion configuration and here from the station map. Checking the
+        # two this script uses are among them is what turns a misconfigured map into a clear
+        # failure rather than a puzzling InvalidStation later.
         stations = carriage.StationNames.get()
         print(f"Stations: {stations}")
-        for station in (TRANSFER_SOURCE, TRANSFER_DESTINATION):
+        for station in (TRANSFER_SOURCE_STATION, TRANSFER_DESTINATION_STATION):
             if station not in stations:
                 raise RuntimeError(f"Expected {station} among the reported stations, got: {stations}")
-        if ARM_LOCATION in stations:
-            raise RuntimeError(f"The arm's own location {ARM_LOCATION} must not be offered as a station")
+        # A location is not a station name. If one appears here the map is being bypassed, and a
+        # workflow written against this mock would not run on the machine.
+        if any("." in station for station in stations):
+            raise RuntimeError(f"Station names must be the machine's own, not world locations: {stations}")
 
         # The carriage position and the machine light, before the transfer. The light is read
         # from the world model's device state, which the seed declares off at t=0.
@@ -118,8 +131,8 @@ def main() -> int:
 
         responses, phases = transfer(
             labware,
-            source=TRANSFER_SOURCE,
-            destination=TRANSFER_DESTINATION,
+            source=TRANSFER_SOURCE_STATION,
+            destination=TRANSFER_DESTINATION_STATION,
             timeout_seconds=args.timeout,
         )
         print(f"Transfer phases: {phases}")

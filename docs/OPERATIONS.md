@@ -106,6 +106,26 @@ docker compose exec sila2-server-1 cat /app/command_durations.json
 **realistic プロファイルでは `samples/` に `--timeout 120` を渡す**。既定の 10 秒では
 `SpinCycle`（20 秒）などが必ずタイムアウトする。詳細は `docs/TIMING.md`。
 
+## Ardea の station マップを変える
+
+Ardea は station 名（`Base1`..`Base6`）で呼ばれ、環境変数 `ARDEA_STATIONS` が名前 → location を決める
+（対応表と設計は `docs/SERVERS.md`）。**環境変数なのでリビルドは不要**。
+
+```bash
+# docker-compose.yml の ardea-server-1 の ARDEA_STATIONS を編集してから
+docker compose up -d --force-recreate ardea-server-1
+docker compose logs --tail=20 ardea-server-1     # 不正なら起動時に落ちる
+```
+
+**右辺は seed が宣言した spot でなければならない**。マップと seed の両方を触ったときは、必ず
+「直接接続の確認」を回すこと（`unknown_location` は使った瞬間に初めて出る）。
+
+現在のマップはサーバーに聞ける。
+
+```bash
+uv run python -c "from sila2.client import SilaClient; print(SilaClient('127.0.0.1', 50057, insecure=True).CarriageService.StationNames.get())"
+```
+
 ## 単体テスト
 
 Docker を使わずコンポーネント単体を検証する pytest スイート。リポジトリルートで実行する。

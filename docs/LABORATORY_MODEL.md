@@ -175,6 +175,9 @@ boundary:
   - `AutomatedThermalCyclerController.OpenLid` で `unlock`
   - `AutomatedThermalCyclerController.CloseLid` で `lock`
 - `LabwareService.Transfer`（Ardea）は laboratory model 上の **`move` 2 回**として扱う。
+  - **クライアントが渡すのは location ではなく station 名**（`Base1`..`Base6`）。Ardea サーバーの
+    station マップ（`ARDEA_STATIONS`）が location へ変換する。**マップの右辺は seed が宣言した spot でなければ
+    ならない**（そうでなければ move が `unknown_location` で落ちる）。対応表は `docs/SERVERS.md`。
   - `source -> ardea.gripper`（pick）、続いて `ardea.gripper -> destination`（put）。
   - Ardea サーバー自身は item ID を内部保持しない。
   - **1 コマンドで両方**行う。実機も 1 コマンドで経路全体（carriage 移動 → pick → carriage 移動 → put）を走る。

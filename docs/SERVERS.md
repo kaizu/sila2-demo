@@ -40,17 +40,44 @@
 **このラボでは通るが実機では通らない**依存を持ってしまう。「実装済みは Transfer だけ」を保つ検査は
 上記の単体テストに入っている。
 
+### station マップ（`ARDEA_STATIONS`）
+
+**`Transfer` は実機と同じ station 名を取る。** 実機は station 名（`Base1`, `Base2`, ...）を motion 設定で
+解決し、そこに「レール上の位置」と「到達する robot タスク」が書かれている。モックにはどちらも対応物が無いが、
+**プレートが物理的にどこにあるか**は世界モデルにあるので、等価物は名前 → location の対応表だけになる。
+
+環境変数 1 本で渡す（`servers/ardea_server/ardea_server/stations.py`）:
+
+```
+ARDEA_STATIONS=Base1=station.slot1,Base2=station.slot2,Base3=seal-remover.stage,Base4=plateloc.stage,Base5=centrifuge.deck,Base6=thermal-cycler.block
+```
+
+実機のベンチと同じ構成である。各ステーションは **1 spot** を持つ。
+
+| station | 実機 | location |
+|---|---|---|
+| `Base1` / `Base2` | プレート置き場 2 つ | `station.slot1` / `station.slot2` |
+| `Base3` | peeler（シール剥がし） | `seal-remover.stage` |
+| `Base4` | sealer（PlateLoc） | `plateloc.stage` |
+| `Base5` | plate centrifuge | `centrifuge.deck` |
+| `Base6` | thermal cycler | `thermal-cycler.block` |
+
+**なぜファイルでなく環境変数か**: サーバー設定は環境変数で渡すのがこのリポジトリの規約（`docs/RULES.md`）で、
+この対応表はまさに per-server の設定である。加えて**リビルド無しで変えられる**（`--force-recreate` のみ）ので、
+同じく run の合間に編集できる seed と歩調が合う。YAML ファイルにすればコメントは書けるが、読むために
+ランタイムイメージへ PyYAML が入る（所要時間を JSON に焼いているのはそれを避けるためである）。
+
+**起動時に検証して落とす**。未設定・空・`name=device.spot` でない・同じ名前が 2 回・同じ spot に 2 つの名前、は
+すべて起動失敗にする。laboratory_model 系の環境変数と違い**省略は運用モードではない** — station 名を解決できない
+搬送機は存在意義が無い。検査内容は `servers/ardea_server/tests/test_stations.py`。
+
 **実装する 3 プロパティの導出**（世界モデルに素直に対応するものだけを実装した）:
 
 | プロパティ | 導出 |
 |---|---|
-| `CarriageService.StationNames` | `GET /state` の全 `device.spot` から arm 自身の spot（`ardea.gripper`）を除いてソート。**`Transfer` が受け付ける名前と完全に一致する**。実機は motion 設定から読む |
-| `CarriageService.CarriagePosition` | 合成レール位置 = 上記リスト内の index × 100 mm。**実機の座標ではない**。目的は「動かない間は安定し、動けば変わる」という観測可能性で、`Transfer` が到達のたびに publish する |
+| `CarriageService.StationNames` | station マップの名前をソートしたもの。**`Transfer` が受け付ける集合と完全に一致する**。起動時に読むので実機の「サーバー生存中は固定」という約束も満たす |
+| `CarriageService.CarriagePosition` | 合成レール位置 = 上記リスト内の index × 100 mm。**実機の座標ではない**（実機の実測値は motion 設定にあり、この世界はその幾何を持たない）。目的は「動かない間は安定し、動けば変わる」という観測可能性で、`Transfer` が到達のたびに publish する。実座標を入れたくなったら station マップが置き場所である |
 | `LabwareService.LightIsOn` | `ardea` device の opaque state の `light` キー（`GET /devices/ardea/state`）。実機ではロボットコントローラの変数なので世界モデルに対応物が無く、seed が宣言し運用者が `PUT /devices/ardea/state/light` で変える |
-
-**station 名は暫定で `device.spot` そのもの。** 実機の station 名は motion 設定由来（`Base2`..`Base5` 等）
-なので、この点だけは実機とモックでワークフローの引数が違う。**次段で mock 専用の station マップを入れる**
-予定であり、そのとき `StationNames` / `CarriagePosition` / `InvalidStation` はその設定を読む形に変わる。
 
 **世界モデルの失敗は declared error に分かれない。** 未宣言 location・item 不在・扉が閉じている、は
 どれも undefined execution error として届く（実機なら `NoStationAtPosition` / `GraspFailed` 等に分かれる）。
@@ -66,6 +93,7 @@
 - 現在 item の存在を前提とするコマンド: `SpinCycle` / `StartCycle` / `Peel` / `StartRun`。
 - 現在 access 状態を更新するコマンド: centrifuge の `OpenDoor` / `CloseDoor`、thermal cycler の `OpenLid` / `CloseLid`。
 - `LabwareService.Transfer`（Ardea）は世界モデル上の **2 hop の `move`** として扱う。
+  - **引数は station 名**（`Base1`..`Base6`）で、location へは station マップが変換する（上記）。
   - source から arm の spot（`ardea.gripper`）へ、続いて arm の spot から destination へ。
   - 保持中 item を表す独自の内部変数は持たない。搬送中のプレートが arm 上にあるのは実機でも実際の状態である。
   - **実機は 1 コマンドで経路全体を走る**（carriage を source へ → pick → destination へ → put）ので、

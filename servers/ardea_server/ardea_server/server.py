@@ -61,6 +61,7 @@ from .generated.robotposeservice import RobotPoseServiceFeature
 from .generated.robotservice import RobotServiceFeature
 from .generated.taskservice import TaskServiceFeature
 from .generated.variableservice import VariableServiceFeature
+from .stations import load_station_map
 
 logger = logging.getLogger(__name__)
 
@@ -70,10 +71,9 @@ logger = logging.getLogger(__name__)
 COMMAND_DURATIONS_FILE = os.getenv("COMMAND_DURATIONS_FILE", "/app/command_durations.json")
 
 # Spacing between two neighbouring stations on the mock's synthetic rail, in millimetres. The
-# real machine's stations sit at measured positions taken from its motion configuration; this
-# mock has no such configuration (a station simply *is* a world-model location), so the
-# position it reports is the station's index in the world's own ordering times this pitch. See
-# `station_position_mm` for why that is worth reporting at all.
+# real machine's stations sit at measured positions taken from its motion configuration, which
+# is geometry this world does not model, so the position reported here is the station's index in
+# the map times this pitch. See `station_position_mm` for why that is worth reporting at all.
 STATION_PITCH_MM = 100.0
 
 # The name of the machine light in the world model: a key in the Ardea device's opaque state
@@ -117,6 +117,11 @@ class Server(SilaServer):
         laboratory_model = load_laboratory_model_config()
         self.laboratory_model_url = laboratory_model.url
         self.laboratory_model_location = laboratory_model.location
+        # The station map: which of this machine's station names means which place in the
+        # world. Read and validated here, so a container with a typo in it fails at startup.
+        # Unlike the settings above it is not optional -- a transporter that cannot resolve a
+        # station name cannot do anything. See `stations.py`.
+        self.stations = load_station_map()
         self._command_durations = _load_command_durations()
         # Guards against two commands executing at once; see `executing` below.
         self._execution_lock = Lock()
@@ -262,52 +267,39 @@ class Server(SilaServer):
         arm_location = self._require_laboratory_model_move_configuration(command_name=command_name)
         self.move_item(command_name=command_name, source=arm_location, destination=location)
 
-    def station_locations(self, *, command_name: str) -> list[str]:
-        """The stations this machine can serve: every declared location but the arm's own.
+    def station_names(self) -> list[str]:
+        """The station names this machine serves, sorted.
 
-        On the real Ardea the stations come from the motion configuration -- that is where its
-        `StationNames` property reads them, and what `Transfer` resolves a station name
-        against. This mock has no such file, because a station simply *is* a world-model
-        location, so the equivalent authority is the world's declared topology. It is read
-        fresh each time rather than cached at startup: `POST /reseed` can change the topology
-        under a running server, and the real property's promise of a fixed list is a promise
-        about a config file that this mock does not have.
+        These are the names `Transfer` accepts and `StationNames` reports -- the machine's own
+        vocabulary (`Base1`, `Base2`, ...), not world-model locations. Fixed for the server's
+        lifetime, as the real property promises, because the map is read once at startup.
 
-        Sorted, so every caller sees the same ordering: `station_position_mm` turns a
-        station's index in this list into a millimetre position, and an index that depended on
-        the order the world model happened to answer in would not be reproducible."""
-        arm_location = self._require_laboratory_model_move_configuration(command_name=command_name)
-        state = self._request_laboratory_model(command_name=command_name, path="/state", method="GET")
+        Sorted so every caller sees one ordering: `station_position_mm` turns a station's index
+        in this list into a millimetre position, and an index that varied would not be
+        reproducible."""
+        return sorted(self.stations)
 
-        devices = state.get("devices")
-        if not isinstance(devices, list):
-            raise RuntimeError(f"{command_name} got a laboratory model /state response without a device list")
+    def station_location(self, station: str) -> str | None:
+        """The `device.spot` a station name means, or None if this machine has no such station."""
+        return self.stations.get(station)
 
-        # Flatten the world to its location strings. The world model reports the joined
-        # `location` alongside its halves, so there is nothing to reassemble here.
-        locations: list[str] = []
-        for device in devices:
-            if not isinstance(device, dict):
-                continue
-            for spot in device.get("spots") or []:
-                if isinstance(spot, dict) and isinstance(spot.get("location"), str):
-                    locations.append(spot["location"])
+    def station_position_mm(self, station: str) -> float:
+        """The synthetic rail position of `station`.
 
-        # The arm's own holding spot is a real place in this world but not a station: a
-        # transfer to or from it would be asking the arm to hand a plate to itself.
-        return sorted(location for location in locations if location != arm_location)
+        The mock has no measured station positions -- the machine's are in its motion
+        configuration, which is geometry this world does not model -- so the value is derived
+        rather than configured: the station's index in `station_names()`, times
+        `STATION_PITCH_MM`. It is not the machine's geometry and is not meant to be read as
+        distance. What it gives a client is a number that is stable while nothing moves and
+        that *changes when the carriage does*, which is the observable part of the real
+        property. An unknown station reports 0.0, the same as the position before the first
+        transfer.
 
-    def station_position_mm(self, station: str, stations: list[str]) -> float:
-        """The synthetic rail position of `station`, given the station list it belongs to.
-
-        The mock has no measured station positions, so this is derived rather than configured:
-        the station's index in the sorted station list, times `STATION_PITCH_MM`. It is not the
-        machine's geometry and is not meant to be. What it gives a client is a number that is
-        stable for a given world and that *changes when the carriage moves*, which is the
-        observable part of the real property. A station that is not in the list reports 0.0,
-        the same as the position before the first transfer."""
+        If real positions are ever wanted here, the station map is where they belong, beside
+        the location each name already carries."""
+        names = self.station_names()
         try:
-            return stations.index(station) * STATION_PITCH_MM
+            return names.index(station) * STATION_PITCH_MM
         except ValueError:
             return 0.0
 

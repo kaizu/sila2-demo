@@ -58,7 +58,8 @@ _FEATURE = "LabwareService"
 # the machine names the PacScript it is running (`approach: RunTask(xxxApproachPick2)`) and
 # which way the arm is turned, and this mock knows neither -- there are no task names and no
 # arm to turn. Inventing them would put strings in front of a client that look like they came
-# from a controller. What is left is the shape of the route, which is the part that is true.
+# from a controller. What is left is the shape of the route, which is the part that is true --
+# and the station names, which are the machine's own now that there is a station map.
 _PHASE_START = "transfer {source} -> {destination}"
 _PHASE_TO_SOURCE = "carriage -> {position:g} mm"
 _PHASE_AT_SOURCE = "start (station {station})"
@@ -94,20 +95,29 @@ class LabwareServiceImpl(LabwareServiceBase):
         with self.parent_server.executing("Transfer"):
             instance.begin_execution()
 
-            # Resolve both station names before touching the world. The real server does the
-            # same thing first (`station_by_name` -> `InvalidStation`), because a name it does
-            # not know is a mistake to report rather than a motion to attempt -- so this is the
-            # machine's own behaviour being mocked, not a pre-check invented here.
-            stations = self.parent_server.station_locations(command_name=command)
-            unknown = [name for name in (source, destination) if name not in stations]
+            # Resolve both station names against the station map before touching the world.
+            # The real server does the same thing first (`station_by_name` ->
+            # `InvalidStation`), because a name it does not know is a mistake to report rather
+            # than a motion to attempt -- so this is the machine's own behaviour being mocked,
+            # not a pre-check invented here.
+            source_location = self.parent_server.station_location(source)
+            destination_location = self.parent_server.station_location(destination)
+            unknown = [
+                name
+                for name, location in ((source, source_location), (destination, destination_location))
+                if location is None
+            ]
             if unknown:
                 raise InvalidStation(
                     f"{', '.join(unknown)}: not a station of this machine. Known stations: "
-                    f"{', '.join(stations)}."
+                    f"{', '.join(self.parent_server.station_names())}."
                 )
+            # mypy: the two are not None once `unknown` is empty, but that is not something it
+            # can see through the list comprehension above.
+            assert source_location is not None and destination_location is not None
 
-            source_position = self.parent_server.station_position_mm(source, stations)
-            destination_position = self.parent_server.station_position_mm(destination, stations)
+            source_position = self.parent_server.station_position_mm(source)
+            destination_position = self.parent_server.station_position_mm(destination)
 
             phases_entered = 0
 
@@ -136,13 +146,13 @@ class LabwareServiceImpl(LabwareServiceBase):
             phase(_PHASE_AT_SOURCE.format(station=source))
 
             phase(_PHASE_PICK)
-            self.parent_server.pick_item(command_name=command, location=source)
+            self.parent_server.pick_item(command_name=command, location=source_location)
 
             phase(_PHASE_TO_DESTINATION.format(position=destination_position))
             self.parent_server.carriageservice.update_CarriagePosition(destination_position)
 
             phase(_PHASE_PUT)
-            self.parent_server.place_item(command_name=command, location=destination)
+            self.parent_server.place_item(command_name=command, location=destination_location)
 
             phase(_PHASE_VERIFY)
 
