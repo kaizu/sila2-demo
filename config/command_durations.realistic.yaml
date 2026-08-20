@@ -60,6 +60,12 @@ devices:
       ResetInstrument: { duration: 2 }
       Reset:           { duration: 1 }
 
-  trolley-arm:
+  # Ardea, the transporter. `Transfer` is the whole route -- carriage to the source, pick,
+  # carriage to the destination, put -- so its time is the sum of all of that, not one motion.
+  # On the real machine the rail alone is 2600 mm at 50 mm/s, and the four pick/put tasks run on
+  # top of that; 30 s is the round figure that keeps this the longest command in the lab without
+  # making a sample run tedious. The mock spends it in seven equal slices, one per reported
+  # phase, so a polling client sees the route progress rather than one long silence.
+  ardea:
     commands:
-      SetTrolleyPosition: { duration: 3 }
+      Transfer: { duration: 30 }

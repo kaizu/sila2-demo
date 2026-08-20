@@ -39,11 +39,18 @@ devices:
   - id: station
     spots: [slot1, slot2]
 
-  # The transporter. labcode models an arm without spots -- an object in transit is simply "on
-  # the transporter" -- but this world has to say where a carried plate physically is, so the arm
-  # is declared as a device with the one spot an item occupies while being moved.
-  - id: trolley-arm
+  # The transporter: Ardea, a robot arm on a travel carriage. labcode models an arm without
+  # spots -- an object in transit is simply "on the transporter" -- but this world has to say
+  # where a carried plate physically is, so the arm is declared as a device with the one spot an
+  # item occupies while being moved.
+  #
+  # `light` is the machine light. On the real Ardea it is a boolean variable on the robot
+  # controller, which this world has no equivalent of, so it lives here in the device's opaque
+  # state instead: the server reads it for `LabwareService.LightIsOn`, and an operator can flip
+  # it with `PUT /devices/ardea/state/light`. Off at t=0, as the machine is found in the morning.
+  - id: ardea
     spots: [gripper]
+    state: { light: false }
 
 boundary:
   # One plate, waiting on the station where a run would pick it up. Ports without a `spot` would

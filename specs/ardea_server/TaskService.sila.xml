@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Draft" Originator="jp.riken" Category="bcap"
+         xmlns="http://www.sila-standard.org"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>TaskService</Identifier>
+  <DisplayName>Task Service</DisplayName>
+  <Description>
+    Run robot controller tasks (programs) by name on a DENSO robot controller over b-CAP,
+    and list available task names. The server is stateless: each command opens a b-CAP
+    connection, acquires the task handle, performs the operation, then releases the handle
+    and disconnects.
+  </Description>
+
+  <!-- Commands -->
+  <Command>
+    <Identifier>RunTask</Identifier>
+    <DisplayName>Run Task</DisplayName>
+    <Description>
+      Start a controller task in one-cycle mode (mode 1) by name and wait for it to
+      finish. This is an observable command. After starting the task the command holds
+      the b-CAP connection and polls the task execution status: it first waits for the
+      task to enter the running state, then waits for it to leave that state. A clean
+      one-cycle completion (status returns to ready) finishes the command successfully.
+      If completion is not reached within the configured timeout, the task is stopped
+      (initialized stop) and the command fails. The command stays free of connection and
+      timing details; those are configured on the server.
+    </Description>
+    <Observable>Yes</Observable>
+    <Parameter>
+      <Identifier>TaskName</Identifier>
+      <DisplayName>Task Name</DisplayName>
+      <Description>The name of the controller task (program) to start.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Response>
+      <Identifier>Started</Identifier>
+      <DisplayName>Started</DisplayName>
+      <Description>True if the task was started successfully.</Description>
+      <DataType>
+        <Basic>Boolean</Basic>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>ControllerConnectionError</Identifier>
+      <Identifier>TaskAccessError</Identifier>
+      <Identifier>TaskExecutionTimeout</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+
+  <Command>
+    <Identifier>GetTaskNames</Identifier>
+    <DisplayName>Get Task Names</DisplayName>
+    <Description>List the names of all available controller tasks.</Description>
+    <Observable>No</Observable>
+    <Response>
+      <Identifier>TaskNames</Identifier>
+      <DisplayName>Task Names</DisplayName>
+      <Description>The list of controller task names.</Description>
+      <DataType>
+        <List>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </List>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>ControllerConnectionError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+
+  <!-- Command execution errors -->
+  <DefinedExecutionError>
+    <Identifier>ControllerConnectionError</Identifier>
+    <DisplayName>Controller Connection Error</DisplayName>
+    <Description>Failed to connect to or communicate with the robot controller over b-CAP.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>TaskAccessError</Identifier>
+    <DisplayName>Task Access Error</DisplayName>
+    <Description>Failed to access, start, or run the requested task (e.g. the task name does not exist, start was rejected, or the task stopped abnormally instead of completing one cycle).</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>TaskExecutionTimeout</Identifier>
+    <DisplayName>Task Execution Timeout</DisplayName>
+    <Description>The task did not complete within the configured timeout. The task was stopped (initialized stop) before the command failed.</Description>
+  </DefinedExecutionError>
+</Feature>

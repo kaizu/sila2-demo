@@ -100,9 +100,10 @@
   検証は装置自身の getter と、ワークフロー自身の出力から取る。どちらも実機に存在する。
 - **統合スクリプトを回すべきタイミング**: seed の spot 名を変えたとき／`specs/` の Feature を差し替えたとき／
   `sila2` のバージョンを上げたとき。継ぎ目には自動回帰が無いので、この 3 つは手で回す。
-- **テストは対象コードの隣に置く**（`laboratory_model/tests/`、`laboratory-client/tests/`、
-  将来 `servers/<name>/tests/`）。**依存とテスト設定はルートの `pyproject.toml` に集約する**。
-  1 コンポーネントごとに `testpaths` と `pythonpath` に 1 エントリずつ足す。
+- **テストは対象コードの隣に置く**（`laboratory_model/tests/`、`laboratory-client/tests/`、`tools/tests/`、
+  `servers/<name>/tests/`）。**依存とテスト設定はルートの `pyproject.toml` に集約する**。
+  1 コンポーネントごとに `testpaths` に 1 エントリ足し、**そのテストが対象を import する場合だけ**
+  `pythonpath` にも足す（`servers/ardea_server/tests/` はファイルを読むだけなので `testpaths` のみ）。
 - `--import-mode=importlib` を使う。同名のテストファイルが複数コンポーネントに現れても衝突しないため。
   **副作用として、リポジトリ直下の project ディレクトリ名を、その中のパッケージ名と同じにしてはならない**。
   pytest は rootdir からの相対パスでテストモジュール名を決めるので、`foo/tests/` は `foo.tests.<module>` として
@@ -133,9 +134,14 @@
 - このリポジトリは、モック SiLA2 サーバー 6 台、共有の世界状態サービス `laboratory_model`、
   サーバーが世界モデルに到達するための共有パッケージ `laboratory-client`、
   ビルド時ヘルパ `tools/` を含む。
+- **6 台のうち Ardea だけは実在する機器のモック**である（搬送役）。実機 `ardea-sila2` の Feature 定義 9 本を
+  そのまま配信し、実装するのは `LabwareService.Transfer` と 3 プロパティのみ。残り 22 コマンドは
+  `NotImplementedError`（undefined execution error）で拒否する。詳細と理由は `docs/SERVERS.md`。
 - ローカル実行の基本系は Docker Compose を前提とする。
 - **`specs/` の Feature XML は編集しない。** これらは実機のモックであり、実機と同一の Feature 定義でなければ
   drop-in 置換テストにならない。多 spot 化などの改修も、コマンド署名と Feature を変えずサーバー内部で行う。
+  **Ardea の生成コードも再生成せず実機からコピーする**（配信される XML をバイト単位で同一に保つ唯一の方法）。
+  実機側が更新されたときの突き合わせ手順は `docs/OPERATIONS.md`。
 - `README.md` は入口として簡潔に保ち、継続的に参照する運用知識は `docs/` 配下へ蓄積する。
 
 ## 文書の地図

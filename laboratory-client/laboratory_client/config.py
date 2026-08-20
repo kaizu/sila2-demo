@@ -39,7 +39,7 @@ class LaboratoryModelConfig:
     """Where the laboratory model is, and which location this server acts on.
 
     Both are optional: `None` means "not configured", which each server interprets for
-    itself (the instrument servers skip their world checks; the trolley arm refuses to move,
+    itself (the instrument servers skip their world checks; Ardea refuses to transfer,
     because a transfer that does not reach the world model has not happened).
     """
 

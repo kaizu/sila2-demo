@@ -7,6 +7,10 @@ service that simulates the physical world they act on. It exists so a workflow e
 system can be exercised against the same SiLA2 interface real instruments expose, before
 there are real instruments.
 
+One of the six, **Ardea**, mocks a machine that exists: it serves that machine's own nine
+Feature definitions unchanged, and implements the one command a workflow needs from a
+transporter (`LabwareService.Transfer`). See `docs/SERVERS.md`.
+
 Docker Compose starts:
 
 | Service | Instrument | Host port |
@@ -17,7 +21,7 @@ Docker Compose starts:
 | `sila2-server-3` | Automated Plate Seal Remover | 50054 |
 | `sila2-server-4` | Automated Thermal Cycler | 50055 |
 | `sila2-server-5` | Station | 50056 |
-| `trolley-arm-server-1` | Trolley Arm | 50057 |
+| `ardea-server-1` | Ardea (arm on a travel carriage) | 50057 |
 
 All SiLA2 servers start with `--insecure --verbose`.
 
@@ -127,9 +131,9 @@ uv run python samples/run_roundabout.py          # one plate around the whole la
 ```
 
 `run_roundabout.py` puts one item at `station.slot1` and moves it through
-`seal-remover.stage`, `plateloc.stage`, `thermal-cycler.block`, `centrifuge.deck` and back. The
-movement goes through the SiLA2 servers; the world model is used only to arrange the start and
-check the end.
+`seal-remover.stage`, `plateloc.stage`, `thermal-cycler.block`, `centrifuge.deck` and back. Each
+leg is one `LabwareService.Transfer` on Ardea. The movement goes through the SiLA2 servers; the
+world model is used only to arrange the start and check the end.
 
 Each sample wipes the world on entry, so do not run them against a stack that is mid-workflow.
 

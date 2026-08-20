@@ -2,10 +2,10 @@
 back to where it started.
 
 Where the per-server smoke tests check one server in isolation, this one checks that the
-servers, the trolley arm and the world model agree with each other over a whole workflow.
-It is the closest thing here to a real run, and the pattern the labcode SiLA2 flavor is
-meant to reproduce: seal removal -> sealing -> thermal cycling -> centrifugation, with the
-trolley arm carrying the plate between stations.
+instruments, the Ardea transporter and the world model agree with each other over a whole
+workflow. It is the closest thing here to a real run, and the pattern the labcode SiLA2
+flavor is meant to reproduce: seal removal -> sealing -> thermal cycling ->
+centrifugation, with Ardea carrying the plate between stations.
 
 Two properties are worth naming because they drive the ordering below:
 
@@ -41,8 +41,8 @@ from common import (
 )
 
 # Host-side ports published by docker-compose, listed in the order the workflow visits the
-# instruments (the trolley arm is used throughout).
-TROLLEY_ARM_PORT = 50057
+# instruments (Ardea is used throughout).
+ARDEA_PORT = 50057
 PLATE_SEAL_REMOVER_PORT = 50054
 PLATELOC_PORT = 50053
 THERMAL_CYCLER_PORT = 50055
@@ -107,16 +107,24 @@ def verify_final_laboratory_state(*, laboratory_model_url: str, expected_item_id
     print(f"Final state snapshot: {snapshot}")
 
 
-def move_with_trolley(*, trolley_feature, laboratory_model_url: str, source: str, destination: str) -> None:
-    """One transport: Pick from `source`, Place at `destination`.
+def move_with_ardea(
+    *, ardea_feature, laboratory_model_url: str, source: str, destination: str, timeout_seconds: float
+) -> None:
+    """One transport: a single `Transfer` from `source` to `destination`.
 
-    Pick and Place are unobservable commands, so they have completed by the time they
-    return; the reads afterwards are for the log, showing the source emptied and the
-    destination filled. Both ends must be accessible or the world model rejects the move --
-    hence the lid/door commands surrounding these calls in the sequence below."""
-    print(f"Moving item with trolley arm: {source} -> {destination}")
-    trolley_feature.Pick(LocationSpecifier=source)
-    trolley_feature.Place(LocationSpecifier=destination)
+    Ardea drives the whole route in one command -- carriage to the source, pick, carriage to
+    the destination, put -- where the trolley arm this replaced needed a Pick and a Place.
+    `Transfer` is observable and reports its phase as it goes, so it is polled to completion;
+    the reads afterwards are for the log, showing the source emptied and the destination
+    filled. Both ends must be accessible or the world model rejects the move -- hence the
+    lid/door commands surrounding these calls in the sequence below."""
+    print(f"Moving item with Ardea: {source} -> {destination}")
+    responses = wait_for_observable(
+        ardea_feature.Transfer(SourceStation=source, DestinationStation=destination),
+        label="LabwareService.Transfer",
+        timeout_seconds=timeout_seconds,
+    )
+    print(f"Transfer finished at {responses.CarriagePosition} mm, at retract pose: {responses.AtRetractPose}")
 
     pick_source_state = get_location_state(
         laboratory_model_url=laboratory_model_url,
@@ -138,7 +146,7 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         plateloc_client = stack.enter_context(connect(host, PLATELOC_PORT, insecure=insecure))
         seal_remover_client = stack.enter_context(connect(host, PLATE_SEAL_REMOVER_PORT, insecure=insecure))
         thermal_cycler_client = stack.enter_context(connect(host, THERMAL_CYCLER_PORT, insecure=insecure))
-        trolley_client = stack.enter_context(connect(host, TROLLEY_ARM_PORT, insecure=insecure))
+        ardea_client = stack.enter_context(connect(host, ARDEA_PORT, insecure=insecure))
 
         # Identify every server up front: this fails fast and clearly if part of the stack
         # is not up, rather than midway through the workflow with a plate in transit.
@@ -146,13 +154,13 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         print_server_identity(plateloc_client, host=host, port=PLATELOC_PORT)
         print_server_identity(seal_remover_client, host=host, port=PLATE_SEAL_REMOVER_PORT)
         print_server_identity(thermal_cycler_client, host=host, port=THERMAL_CYCLER_PORT)
-        print_server_identity(trolley_client, host=host, port=TROLLEY_ARM_PORT)
+        print_server_identity(ardea_client, host=host, port=ARDEA_PORT)
 
         centrifuge = centrifuge_client.MicroplateCentrifugeController
         plateloc = plateloc_client.PlateLocController
         seal_remover = seal_remover_client.AutomatedPlateSealRemoverController
         thermal_cycler = thermal_cycler_client.AutomatedThermalCyclerController
-        trolley = trolley_client.TrolleyArmProvider
+        ardea = ardea_client.LabwareService
 
         # Prepare the thermal cycler's protocol now, long before the plate reaches it: the
         # instrument rejects StartRun unless a protocol was loaded and validated, and doing
@@ -170,11 +178,12 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
 
         # Step 1 -- seal removal. Neither the station nor the seal remover has a door, so
         # this transport needs no bracketing commands.
-        move_with_trolley(
-            trolley_feature=trolley,
+        move_with_ardea(
+            ardea_feature=ardea,
             laboratory_model_url=laboratory_model_url,
             source=STATION_SOURCE,
             destination=SEAL_REMOVER_LOCATION,
+            timeout_seconds=timeout_seconds,
         )
         wait_for_observable(
             seal_remover.Peel(BeginPeelLocation=1, AdhesionTime=1),
@@ -185,11 +194,12 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
 
         # Step 2 -- resealing. The sealing parameters are set on the instrument first; the
         # cycle then runs on whatever plate is present at its location.
-        move_with_trolley(
-            trolley_feature=trolley,
+        move_with_ardea(
+            ardea_feature=ardea,
             laboratory_model_url=laboratory_model_url,
             source=SEAL_REMOVER_LOCATION,
             destination=PLATELOC_LOCATION,
+            timeout_seconds=timeout_seconds,
         )
         plateloc.SetSealingTemperature(SealingTemperature=180)
         plateloc.SetSealingTime(SealingTime=2.0)
@@ -208,11 +218,12 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
             label="AutomatedThermalCyclerController.OpenLid",
             timeout_seconds=timeout_seconds,
         )
-        move_with_trolley(
-            trolley_feature=trolley,
+        move_with_ardea(
+            ardea_feature=ardea,
             laboratory_model_url=laboratory_model_url,
             source=PLATELOC_LOCATION,
             destination=THERMAL_CYCLER_LOCATION,
+            timeout_seconds=timeout_seconds,
         )
         wait_for_observable(
             thermal_cycler.CloseLid(),
@@ -245,11 +256,12 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
             label="MicroplateCentrifugeController.OpenDoor",
             timeout_seconds=timeout_seconds,
         )
-        move_with_trolley(
-            trolley_feature=trolley,
+        move_with_ardea(
+            ardea_feature=ardea,
             laboratory_model_url=laboratory_model_url,
             source=THERMAL_CYCLER_LOCATION,
             destination=CENTRIFUGE_LOCATION,
+            timeout_seconds=timeout_seconds,
         )
         wait_for_observable(
             centrifuge.CloseDoor(),
@@ -285,20 +297,21 @@ def run_roundabout_sequence(*, host: str, insecure: bool, timeout_seconds: float
         print("Centrifuge cycle completed.")
 
         # Step 5 -- back to the station the plate started from, closing the circuit.
-        move_with_trolley(
-            trolley_feature=trolley,
+        move_with_ardea(
+            ardea_feature=ardea,
             laboratory_model_url=laboratory_model_url,
             source=CENTRIFUGE_LOCATION,
             destination=STATION_RETURN,
+            timeout_seconds=timeout_seconds,
         )
         print("Roundabout completed.")
 
 
 def main() -> int:
-    # The trolley arm's port is the parser default because it is the one server involved in
-    # every step; the rest are fixed constants (see above) since this sample only makes
-    # sense against the compose stack as a whole.
-    parser = build_parser("Run an end-to-end roundabout workflow using the SiLA2 servers directly.", TROLLEY_ARM_PORT)
+    # Ardea's port is the parser default because it is the one server involved in every
+    # step; the rest are fixed constants (see above) since this sample only makes sense
+    # against the compose stack as a whole.
+    parser = build_parser("Run an end-to-end roundabout workflow using the SiLA2 servers directly.", ARDEA_PORT)
     parser.add_argument(
         "--laboratory-model-url",
         default=DEFAULT_LABORATORY_MODEL_URL,

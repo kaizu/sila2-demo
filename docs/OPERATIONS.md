@@ -161,6 +161,29 @@ uv run python samples/run_roundabout.py          # 装置を一周する統合�
 
 これらは**世界を破壊する**（冒頭で `/reset` する）ので、ワークフロー実行中のスタックに対しては走らせない。
 
+realistic プロファイルでは `Transfer` が 30 秒かかるので、既定の 10 秒上限を超える。`--timeout 120` を付ける。
+
+## Ardea の Feature 定義を実機と突き合わせる
+
+Ardea は実在機器のモックであり、配信する Feature 定義が実機と同一であることが存在理由である
+（`docs/SERVERS.md`）。**この同一性だけは自動テストで守れない**——実機リポジトリが手元に無いと比較できないため。
+単体テストが見ているのは `specs/` と配信版が互いに整合しているかどうかまでである。
+
+したがって**実機側（`ardea-sila2`）が更新されたときは手で突き合わせる**。実機の submodule は
+`ardea-sila2` 側にあり、このリポジトリには無い:
+
+```bash
+cd ../ardea-sila2
+git submodule update --init --recursive     # 初回のみ
+sha256sum ardea_sila2/generated/*/*.sila.xml third_party/*/*/generated/*/*.sila.xml
+cd -
+sha256sum servers/ardea_server/ardea_server/generated/*/*.sila.xml
+```
+
+9 本のハッシュが一致していればよい。差分があれば**ソース XML（`specs/ardea_server/`）と生成物の両方を
+コピーし直し**、`uv run pytest` と上記の直接接続確認を回す。実機のどのブランチから取ったかは
+`specs/ardea_server/README.md` に記録してある。
+
 ## ログ確認
 
 ```bash

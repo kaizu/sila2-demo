@@ -28,7 +28,7 @@ SCRIPTS = [
     "automated_plate_seal_remover_server_smoke.py",
     "automated_thermal_cycler_server_smoke.py",
     "station_server_smoke.py",
-    "trolley_arm_server_smoke.py",
+    "ardea_server_smoke.py",
 ]
 
 

@@ -158,8 +158,8 @@ def add_item_to_location(*, laboratory_model_url: str, location: str) -> dict[st
 
 
 def move_item_between_locations(*, laboratory_model_url: str, source: str, destination: str) -> dict[str, Any]:
-    # Direct world-model move, bypassing the trolley arm. Used to check the model's own
-    # rules; workflow-level transport goes through TrolleyArmProvider Pick/Place instead.
+    # Direct world-model move, bypassing the transporter. Used to check the model's own
+    # rules; workflow-level transport goes through LabwareService.Transfer on Ardea instead.
     return request_laboratory_model(
         laboratory_model_url=laboratory_model_url,
         path="/items/move",

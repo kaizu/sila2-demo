@@ -41,7 +41,7 @@ DEVICE_BY_PACKAGE = {
     "automated_thermal_cycler_server": "thermal-cycler",
     "plateloc_server": "plateloc",
     "automated_plate_seal_remover_server": "seal-remover",
-    "trolley_arm_server": "trolley-arm",
+    "ardea_server": "ardea",
     "station_server": "station",
 }
 

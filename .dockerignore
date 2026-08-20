@@ -20,3 +20,8 @@ dev-notes
 samples
 specs
 docs
+
+# Component tests run in the dev environment, never in an image. A server's own tests/ sits
+# beside its package rather than inside it, so pip would not install them anyway -- excluding
+# them just keeps them out of the build context.
+**/tests

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Feature SiLA2Version="1.0" FeatureVersion="1.0" MaturityLevel="Draft" Originator="jp.riken" Category="bcap"
+         xmlns="http://www.sila-standard.org"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>VariableService</Identifier>
+  <DisplayName>Variable Service</DisplayName>
+  <Description>
+    Read and write controller variables (including I/O) on a DENSO robot controller
+    over b-CAP, and list available controller variable names. The server is stateless:
+    each command opens a b-CAP connection, acquires the variable handle, performs the
+    operation, then releases the handle and disconnects.
+  </Description>
+
+  <!-- Commands -->
+  <Command>
+    <Identifier>ReadVariable</Identifier>
+    <DisplayName>Read Variable</DisplayName>
+    <Description>Read the value of a controller variable by name.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>VariableName</Identifier>
+      <DisplayName>Variable Name</DisplayName>
+      <Description>The name of the controller variable to read.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Response>
+      <Identifier>Value</Identifier>
+      <DisplayName>Value</DisplayName>
+      <Description>The variable value, represented as a string.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Response>
+    <Response>
+      <Identifier>DataType</Identifier>
+      <DisplayName>Data Type</DisplayName>
+      <Description>The detected data type of the value.</Description>
+      <DataType>
+        <DataTypeIdentifier>VariableDataType</DataTypeIdentifier>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>ControllerConnectionError</Identifier>
+      <Identifier>VariableAccessError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+
+  <Command>
+    <Identifier>WriteVariable</Identifier>
+    <DisplayName>Write Variable</DisplayName>
+    <Description>Write a value to a controller variable by name.</Description>
+    <Observable>No</Observable>
+    <Parameter>
+      <Identifier>VariableName</Identifier>
+      <DisplayName>Variable Name</DisplayName>
+      <Description>The name of the controller variable to write.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>Value</Identifier>
+      <DisplayName>Value</DisplayName>
+      <Description>The value to write, represented as a string.</Description>
+      <DataType>
+        <Basic>String</Basic>
+      </DataType>
+    </Parameter>
+    <Parameter>
+      <Identifier>DataType</Identifier>
+      <DisplayName>Data Type</DisplayName>
+      <Description>The data type used to convert the string value before writing.</Description>
+      <DataType>
+        <DataTypeIdentifier>VariableDataType</DataTypeIdentifier>
+      </DataType>
+    </Parameter>
+    <DefinedExecutionErrors>
+      <Identifier>ControllerConnectionError</Identifier>
+      <Identifier>VariableAccessError</Identifier>
+      <Identifier>DataTypeConversionError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+
+  <Command>
+    <Identifier>GetVariableNames</Identifier>
+    <DisplayName>Get Variable Names</DisplayName>
+    <Description>List the names of all available controller variables.</Description>
+    <Observable>No</Observable>
+    <Response>
+      <Identifier>VariableNames</Identifier>
+      <DisplayName>Variable Names</DisplayName>
+      <Description>The list of controller variable names.</Description>
+      <DataType>
+        <List>
+          <DataType>
+            <Basic>String</Basic>
+          </DataType>
+        </List>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>ControllerConnectionError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+
+  <!-- Data type definitions -->
+  <DataTypeDefinition>
+    <Identifier>VariableDataType</Identifier>
+    <DisplayName>Variable Data Type</DisplayName>
+    <Description>
+      The data type of a controller variable value. Maps to a b-CAP VARIANT type:
+      Integer (VT_I4), Real (VT_R8), Boolean (VT_BOOL), String (VT_BSTR).
+    </Description>
+    <DataType>
+      <Constrained>
+        <DataType>
+          <Basic>String</Basic>
+        </DataType>
+        <Constraints>
+          <Set>
+            <Value>Integer</Value>
+            <Value>Real</Value>
+            <Value>Boolean</Value>
+            <Value>String</Value>
+          </Set>
+        </Constraints>
+      </Constrained>
+    </DataType>
+  </DataTypeDefinition>
+
+  <!-- Command execution errors -->
+  <DefinedExecutionError>
+    <Identifier>ControllerConnectionError</Identifier>
+    <DisplayName>Controller Connection Error</DisplayName>
+    <Description>Failed to connect to or communicate with the robot controller over b-CAP.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>VariableAccessError</Identifier>
+    <DisplayName>Variable Access Error</DisplayName>
+    <Description>Failed to access the requested variable (e.g. the variable name does not exist or access was denied).</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>DataTypeConversionError</Identifier>
+    <DisplayName>Data Type Conversion Error</DisplayName>
+    <Description>The provided string value could not be converted to the specified data type.</Description>
+  </DefinedExecutionError>
+</Feature>

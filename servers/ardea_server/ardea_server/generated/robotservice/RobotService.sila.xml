@@ -1,0 +1,69 @@
+<Feature xmlns="http://www.sila-standard.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Category="bcap" FeatureVersion="1.0" MaturityLevel="Draft" Originator="jp.riken" SiLA2Version="1.0" xsi:schemaLocation="http://www.sila-standard.org https://gitlab.com/SiLA2/sila_base/raw/master/schema/FeatureDefinition.xsd">
+  <Identifier>RobotService</Identifier>
+  <DisplayName>Robot Service</DisplayName>
+  <Description>Read the current pose of a DENSO robot over b-CAP. The server is stateless:
+    each command opens a b-CAP connection, acquires the robot, runs the pose
+    command (robot_execute "CurJnt" / "CurPos"), then releases the robot and
+    disconnects. The robot is selected as the first robot reported by the
+    controller. These commands only read; they do not move the robot.</Description>
+  <!-- Commands -->
+  <Command>
+    <Identifier>GetJointAngles</Identifier>
+    <DisplayName>Get Joint Angles</DisplayName>
+    <Description>Get the current joint angles via robot_execute(robot, "CurJnt"). Returns
+      the J-type value as a list of reals (J1..J6 in degrees, plus any auxiliary
+      axes).</Description>
+    <Observable>No</Observable>
+    <Response>
+      <Identifier>JointAngles</Identifier>
+      <DisplayName>Joint Angles</DisplayName>
+      <Description>The current joint angles, in the order returned by CurJnt.</Description>
+      <DataType>
+        <List>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+        </List>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>ControllerConnectionError</Identifier>
+      <Identifier>RobotAccessError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <Command>
+    <Identifier>GetCartesianPosition</Identifier>
+    <DisplayName>Get Cartesian Position</DisplayName>
+    <Description>Get the current Cartesian position via robot_execute(robot, "CurPos").
+      Returns the P-type value as a list of reals (X, Y, Z in mm; RX, RY, RZ in
+      degrees; the trailing figure value as a number).</Description>
+    <Observable>No</Observable>
+    <Response>
+      <Identifier>Position</Identifier>
+      <DisplayName>Position</DisplayName>
+      <Description>The current Cartesian position, in the order returned by CurPos.</Description>
+      <DataType>
+        <List>
+          <DataType>
+            <Basic>Real</Basic>
+          </DataType>
+        </List>
+      </DataType>
+    </Response>
+    <DefinedExecutionErrors>
+      <Identifier>ControllerConnectionError</Identifier>
+      <Identifier>RobotAccessError</Identifier>
+    </DefinedExecutionErrors>
+  </Command>
+  <!-- Command execution errors -->
+  <DefinedExecutionError>
+    <Identifier>ControllerConnectionError</Identifier>
+    <DisplayName>Controller Connection Error</DisplayName>
+    <Description>Failed to connect to or communicate with the robot controller over b-CAP.</Description>
+  </DefinedExecutionError>
+  <DefinedExecutionError>
+    <Identifier>RobotAccessError</Identifier>
+    <DisplayName>Robot Access Error</DisplayName>
+    <Description>Failed to acquire the robot or execute the pose command (e.g. no robot is available).</Description>
+  </DefinedExecutionError>
+</Feature>

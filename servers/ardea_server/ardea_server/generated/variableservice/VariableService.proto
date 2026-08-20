@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.jp.riken.bcap.variableservice.v1;
+
+/* Read and write controller variables (including I/O) on a DENSO robot controller over b-CAP, and list available controller variable names. The server is stateless: each command opens a b-CAP connection, acquires the variable handle, performs the operation, then releases the handle and disconnects. */
+service VariableService {
+  /* Read the value of a controller variable by name. */
+  rpc ReadVariable (sila2.jp.riken.bcap.variableservice.v1.ReadVariable_Parameters) returns (sila2.jp.riken.bcap.variableservice.v1.ReadVariable_Responses) {}
+  /* Write a value to a controller variable by name. */
+  rpc WriteVariable (sila2.jp.riken.bcap.variableservice.v1.WriteVariable_Parameters) returns (sila2.jp.riken.bcap.variableservice.v1.WriteVariable_Responses) {}
+  /* List the names of all available controller variables. */
+  rpc GetVariableNames (sila2.jp.riken.bcap.variableservice.v1.GetVariableNames_Parameters) returns (sila2.jp.riken.bcap.variableservice.v1.GetVariableNames_Responses) {}
+}
+
+/* 
+      The data type of a controller variable value. Maps to a b-CAP VARIANT type:
+      Integer (VT_I4), Real (VT_R8), Boolean (VT_BOOL), String (VT_BSTR).
+     */
+message DataType_VariableDataType {
+  sila2.org.silastandard.String VariableDataType = 1;  /* The data type of a controller variable value. Maps to a b-CAP VARIANT type: Integer (VT_I4), Real (VT_R8), Boolean (VT_BOOL), String (VT_BSTR). */
+}
+
+/* Parameters for ReadVariable */
+message ReadVariable_Parameters {
+  sila2.org.silastandard.String VariableName = 1;  /* The name of the controller variable to read. */
+}
+
+/* Responses of ReadVariable */
+message ReadVariable_Responses {
+  sila2.org.silastandard.String Value = 1;  /* The variable value, represented as a string. */
+  sila2.jp.riken.bcap.variableservice.v1.DataType_VariableDataType DataType = 2;  /* The detected data type of the value. */
+}
+
+/* Parameters for WriteVariable */
+message WriteVariable_Parameters {
+  sila2.org.silastandard.String VariableName = 1;  /* The name of the controller variable to write. */
+  sila2.org.silastandard.String Value = 2;  /* The value to write, represented as a string. */
+  sila2.jp.riken.bcap.variableservice.v1.DataType_VariableDataType DataType = 3;  /* The data type used to convert the string value before writing. */
+}
+
+/* Responses of WriteVariable */
+message WriteVariable_Responses {
+}
+
+/* Parameters for GetVariableNames */
+message GetVariableNames_Parameters {
+}
+
+/* Responses of GetVariableNames */
+message GetVariableNames_Responses {
+  repeated sila2.org.silastandard.String VariableNames = 1;  /* The list of controller variable names. */
+}

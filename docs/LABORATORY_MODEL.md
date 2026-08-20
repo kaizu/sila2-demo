@@ -174,13 +174,19 @@ boundary:
   - `MicroplateCentrifugeController.CloseDoor` で `lock`
   - `AutomatedThermalCyclerController.OpenLid` で `unlock`
   - `AutomatedThermalCyclerController.CloseLid` で `lock`
-- `TrolleyArmProvider.Pick` / `Place` は laboratory model 上の `move` として扱う。
-  - `Pick(location)` は `location -> trolley arm 自身の spot`
-  - `Place(location)` は `trolley arm 自身の spot -> location`
-  - trolley arm サーバー自身は item ID を内部保持しない。
+- `LabwareService.Transfer`（Ardea）は laboratory model 上の **`move` 2 回**として扱う。
+  - `source -> ardea.gripper`（pick）、続いて `ardea.gripper -> destination`（put）。
+  - Ardea サーバー自身は item ID を内部保持しない。
+  - **1 コマンドで両方**行う。実機も 1 コマンドで経路全体（carriage 移動 → pick → carriage 移動 → put）を走る。
+- Ardea は device の opaque state も 1 つ使う: **`ardea.state.light`**（機械照明）。
+  `LabwareService.LightIsOn` がこれを読む。実機ではロボットコントローラの変数で、世界モデルに対応物が無いため
+  ここに置いた。seed が t=0 の値を宣言し、運用者は `PUT /devices/ardea/state/light` で変えられる。
+  **世界モデル側はこの値を一切解釈しない**（opaque state の原則どおり）。
+  なお `POST /reset` は device state も消すので、その後 `LightIsOn` はキー不在＝消灯として答える。
+  t=0 の宣言値に戻すには `POST /reseed`。`samples/` は冒頭で reset するので、常に消灯から始まる。
 - **labcode との差分（記録）**: labcode は transporter（`arm`）に spots を持たせない（`transporters: [{id: arm}]`）。
   本 repo は搬送中の item が物理的にどこにあるかを表現する必要があるため、**transporter も spot を持つ device として宣言する**
-  （`trolley-arm.gripper`）。これは backend 側のモデリング選択である。
+  （`ardea.gripper`）。これは backend 側のモデリング選択である。
 
 ## テスト
 

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "SiLAFramework.proto";
+
+package sila2.jp.riken.bcap.robotservice.v1;
+
+/* Read the current pose of a DENSO robot over b-CAP. The server is stateless: each command opens a b-CAP connection, acquires the robot, runs the pose command (robot_execute "CurJnt" / "CurPos"), then releases the robot and disconnects. The robot is selected as the first robot reported by the controller. These commands only read; they do not move the robot. */
+service RobotService {
+  /* Get the current joint angles via robot_execute(robot, "CurJnt"). Returns the J-type value as a list of reals (J1..J6 in degrees, plus any auxiliary axes). */
+  rpc GetJointAngles (sila2.jp.riken.bcap.robotservice.v1.GetJointAngles_Parameters) returns (sila2.jp.riken.bcap.robotservice.v1.GetJointAngles_Responses) {}
+  /* Get the current Cartesian position via robot_execute(robot, "CurPos"). Returns the P-type value as a list of reals (X, Y, Z in mm; RX, RY, RZ in degrees; the trailing figure value as a number). */
+  rpc GetCartesianPosition (sila2.jp.riken.bcap.robotservice.v1.GetCartesianPosition_Parameters) returns (sila2.jp.riken.bcap.robotservice.v1.GetCartesianPosition_Responses) {}
+}
+
+/* Parameters for GetJointAngles */
+message GetJointAngles_Parameters {
+}
+
+/* Responses of GetJointAngles */
+message GetJointAngles_Responses {
+  repeated sila2.org.silastandard.Real JointAngles = 1;  /* The current joint angles, in the order returned by CurJnt. */
+}
+
+/* Parameters for GetCartesianPosition */
+message GetCartesianPosition_Parameters {
+}
+
+/* Responses of GetCartesianPosition */
+message GetCartesianPosition_Responses {
+  repeated sila2.org.silastandard.Real Position = 1;  /* The current Cartesian position, in the order returned by CurPos. */
+}
