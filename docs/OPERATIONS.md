@@ -3,7 +3,7 @@
 ## 起動と停止
 
 ```bash
-docker compose up -d      # laboratory-model ＋ SiLA2 サーバー 6 台
+docker compose up -d      # laboratory-model ＋ SiLA2 サーバー 5 台
 docker compose down
 docker compose ps
 ```
@@ -114,18 +114,21 @@ Docker を使わずコンポーネント単体を検証する pytest スイー�
 uv run pytest
 ```
 
-対象は 3 コンポーネント。
+対象は 4 コンポーネント。
 
 | 対象 | 内容 |
 |---|---|
 | `laboratory_model/tests/` | 世界モデルの規則・HTTP 契約・シード |
 | `laboratory-client/tests/` | HTTP 転送層・環境変数からの設定読み取り |
 | `tools/tests/` | 所要時間の切り出し、および**設定ファイルとサーバー実装の齟齬検出** |
+| `servers/ardea_server/tests/` | `specs/` の Feature 定義と**実際に配信される定義**の整合 |
 
 in-process で動くので compose スタックの起動は不要。方針は `docs/RULES.md`「テスト方針」。
 
 サーバー側のテストを追加する場合も同じ方針で `servers/<name>/tests/` に置き、ルート
-`[tool.pytest.ini_options]` の `testpaths` と `pythonpath` に 1 行ずつ追加する。
+`[tool.pytest.ini_options]` の `testpaths` に 1 行追加する（**そのテストが対象を import する場合だけ**
+`pythonpath` にも足す）。現在は `servers/ardea_server/tests/` があり、Feature 定義をファイルとして
+読むだけなので `testpaths` のみである。
 
 ## 静的チェック
 
@@ -151,7 +154,7 @@ uv run mypy
 単体テストとは目的が異なる（前者は規則、こちらは配備）。**失敗時は非ゼロ終了する。**
 
 ```bash
-uv run python samples/run_all_smoke_tests.py     # 6 台まとめて
+uv run python samples/run_all_smoke_tests.py     # 5 台まとめて
 uv run python samples/laboratory_model_smoke.py  # 世界モデル単体
 uv run python samples/run_roundabout.py          # 装置を一周する統合確認
 ```
@@ -196,8 +199,8 @@ docker compose logs --tail=200 sila2-server-1
 
 ## 注意事項
 
-- ホストからは公開ポート `50052`〜`50057` で各 SiLA2 サーバーへ、`8001` で `laboratory_model` へアクセスする。
+- ホストからは公開ポート `50052`〜`50055` と `50057` で各 SiLA2 サーバーへ、`8001` で `laboratory_model` へアクセスする。**50056 は空き**（station にサーバーが無いため）。
 - コンテナ間はサービスのコンテナ名と**内部ポート** `50052`（SiLA2）／`8001`（laboratory-model）を使う。
-  ホスト公開ポート `50053`〜`50057` はホストからのアクセス用で、コンテナ内部からそのまま使う前提ではない。
+  ホスト公開ポート `50053`〜`50055` と `50057` はホストからのアクセス用で、コンテナ内部からそのまま使う前提ではない。
 - **Git Bash から `docker compose exec` にコンテナ内の絶対パスを渡すとパスが変換される**
   （`/app/...` が `C:/Program Files/Git/app/...` になる）。PowerShell を使うか `MSYS_NO_PATHCONV=1` を付ける。

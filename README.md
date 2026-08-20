@@ -2,12 +2,12 @@
 
 ## Overview
 
-A virtual laboratory: six mock SiLA2 instrument servers plus a shared `laboratory_model`
-service that simulates the physical world they act on. It exists so a workflow execution
-system can be exercised against the same SiLA2 interface real instruments expose, before
-there are real instruments.
+A virtual laboratory: five mock SiLA2 servers -- four instruments and a transporter -- plus a
+shared `laboratory_model` service that simulates the physical world they act on. It exists so
+a workflow execution system can be exercised against the same SiLA2 interface real instruments
+expose, before there are real instruments.
 
-One of the six, **Ardea**, mocks a machine that exists: it serves that machine's own nine
+The transporter, **Ardea**, mocks a machine that exists: it serves that machine's own nine
 Feature definitions unchanged, and implements the one command a workflow needs from a
 transporter (`LabwareService.Transfer`). See `docs/SERVERS.md`.
 
@@ -20,8 +20,12 @@ Docker Compose starts:
 | `sila2-server-2` | PlateLoc | 50053 |
 | `sila2-server-3` | Automated Plate Seal Remover | 50054 |
 | `sila2-server-4` | Automated Thermal Cycler | 50055 |
-| `sila2-server-5` | Station | 50056 |
 | `ardea-server-1` | Ardea (arm on a travel carriage) | 50057 |
+
+The station -- the workflow's entry and exit point -- has no server. It is two slots declared
+by the seed, and a rack has nothing commandable about it. 50056 is free because the server that
+used to sit there offered only `Reset` and a `Status` that never changed; Ardea keeps 50057 so
+anything already pointed at the lab's transporter still finds it.
 
 All SiLA2 servers start with `--insecure --verbose`.
 
@@ -125,7 +129,7 @@ These talk to a running stack over the network, so they check the deployment rat
 rules. Bring the stack up first. They exit non-zero on failure.
 
 ```bash
-uv run python samples/run_all_smoke_tests.py     # all six instruments
+uv run python samples/run_all_smoke_tests.py     # all five servers
 uv run python samples/laboratory_model_smoke.py  # the world model on its own
 uv run python samples/run_roundabout.py          # one plate around the whole lab
 ```
@@ -150,7 +154,7 @@ Each sample wipes the world on entry, so do not run them against a stack that is
 
 ## Container networking
 
-From the host, reach each SiLA2 server on its published port (`50052`-`50057`) and the
+From the host, reach each SiLA2 server on its published port (`50052`-`50055` and `50057`) and the
 laboratory model on `8001`. Between containers, use the service's container name with the
 *internal* port (`50052` for SiLA2 servers, `8001` for `laboratory-model`); the published ports
-`50053`-`50057` are for host access and are not usable verbatim from inside another container.
+`50053`-`50055` and `50057` are for host access and are not usable verbatim from inside another container.

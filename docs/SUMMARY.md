@@ -15,7 +15,7 @@
 
 | ディレクトリ | 内容 |
 |---|---|
-| `servers/` | モック SiLA2 サーバー 6 台（Station / Ardea / Microplate Centrifuge / PlateLoc / Automated Plate Seal Remover / Automated Thermal Cycler）。生成コードと最小限の feature 実装。**Ardea だけは実在する機器のモック**で、実機の Feature 定義 9 本をそのまま配信する（`docs/SERVERS.md`） |
+| `servers/` | モック SiLA2 サーバー 5 台（Microplate Centrifuge / PlateLoc / Automated Plate Seal Remover / Automated Thermal Cycler の 4 装置＋搬送役 Ardea）。生成コードと最小限の feature 実装。**Ardea だけは実在する機器のモック**で、実機の Feature 定義 9 本をそのまま配信する（`docs/SERVERS.md`）。**station（ワークフローの入口・出口）にサーバーは無い** — ラックには commandable なものが無く、seed が spot を宣言すれば足りる |
 | `laboratory_model/` | 共有の世界状態サービス |
 | `laboratory-client/` | サーバーが世界モデルに到達するための共有パッケージ（HTTP 転送層と環境変数からの設定読み取り）。**世界の意味づけは共有せず各サーバーに残す** |
 | `config/` | 世界のシードと、コマンド所要時間のプロファイル |

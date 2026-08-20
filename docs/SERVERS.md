@@ -99,7 +99,6 @@
 - **thermal cycler の `OpenLid` / `CloseLid` は Idle を維持する**（同系の centrifuge の `OpenDoor` / `CloseDoor` は
   Running になる）。これは XML 側の意図的な feature 固有の例外であり、モックのバグではない。
 - `StartRun` は Running にしたまま返り、`StopRun` まで Running が続く。
-- station は起動時 Error(3) を意図的に維持する（デバッグ用途）。
 
 ## その他の実装上の前提
 
@@ -117,7 +116,7 @@
 
 ## 確認方法
 
-- `samples/` に各サーバーへ直接接続する確認スクリプトを置く。`samples/run_all_smoke_tests.py` が 6 台分を束ねる。
+- `samples/` に各サーバーへ直接接続する確認スクリプトを置く。`samples/run_all_smoke_tests.py` が 5 台分を束ねる。
 - `samples/run_roundabout.py` は `station.slot1` の item を Ardea で
   `seal-remover.stage -> plateloc.stage -> thermal-cycler.block -> centrifuge.deck -> station.slot1` と一周させる。
   1 区間 = `Transfer` 1 回。初期化と最終確認には世界モデルを使うが、装置間の移動そのものは SiLA2 サーバーを

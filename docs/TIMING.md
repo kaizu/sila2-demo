@@ -133,5 +133,7 @@ uv run python samples/run_all_smoke_tests.py --timeout 120
   2600 mm / 50 mm/s で、その上に pick/put の 4 タスクが乗るので、これは丸めた概算です。モックはこの 30 秒を
   **報告する phase の数（7）で等分して消費**するので、ポーリングするクライアントに経路の進行が見えます。
   既定プロファイルでは 0 秒＝待たないので、phase は一瞬で流れます。
-- **station には時間を要するコマンドがありません。** 切り出したファイルは空（`{"commands": {}}`）で焼かれ、
-  サーバー側は読みません。将来コマンドが増えたら設定と読み取りを足すだけで済みます。
+- **station には所要時間を書けません**（書いても誰も読みません）。station は seed が spot を宣言するだけの
+  device で、SiLA2 サーバーが無いためです。`tools/tests/` の
+  `test_profiles_describe_only_devices_that_have_a_server` がこれを検査します
+  — seed に宣言があるだけでは足りない、という点が seed ベースの検査との違いです。

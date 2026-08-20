@@ -131,10 +131,14 @@
 
 ## 現在のプロジェクト前提
 
-- このリポジトリは、モック SiLA2 サーバー 6 台、共有の世界状態サービス `laboratory_model`、
+- このリポジトリは、モック SiLA2 サーバー 5 台（4 装置＋搬送役）、共有の世界状態サービス `laboratory_model`、
   サーバーが世界モデルに到達するための共有パッケージ `laboratory-client`、
   ビルド時ヘルパ `tools/` を含む。
-- **6 台のうち Ardea だけは実在する機器のモック**である（搬送役）。実機 `ardea-sila2` の Feature 定義 9 本を
+- **サーバーを持たない device がある**: station（ワークフローの入口・出口）は seed が 2 spot を宣言するだけで、
+  SiLA2 サーバーは無い。ラックには commandable なものが無く、実機ラボでもサーバーは付かない。
+  以前あった station サーバーは `Reset` と変化しない `Status` だけを持っており、モックする対象が無かった。
+  **device の一覧とサーバーの一覧は一致しない**という前提で読むこと。
+- **5 台のうち Ardea だけは実在する機器のモック**である（搬送役）。実機 `ardea-sila2` の Feature 定義 9 本を
   そのまま配信し、実装するのは `LabwareService.Transfer` と 3 プロパティのみ。残り 22 コマンドは
   `NotImplementedError`（undefined execution error）で拒否する。詳細と理由は `docs/SERVERS.md`。
 - ローカル実行の基本系は Docker Compose を前提とする。

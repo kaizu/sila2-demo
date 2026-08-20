@@ -42,7 +42,6 @@ DEVICE_BY_PACKAGE = {
     "plateloc_server": "plateloc",
     "automated_plate_seal_remover_server": "seal-remover",
     "ardea_server": "ardea",
-    "station_server": "station",
 }
 
 # Calls that make a command wait: the sleep itself, and the centrifuge's two helpers which wrap
@@ -104,7 +103,7 @@ def test_no_duration_is_configured_for_a_command_that_does_not_wait(profile: str
 
 @pytest.mark.parametrize("profile", TIMED_PROFILES)
 def test_profiles_describe_only_devices_that_exist(profile: str) -> None:
-    # A device name that matches no server is either a typo or a leftover; either way nothing
+    # A device name that matches nothing in the world is a typo or a leftover; either way nothing
     # reads it. The seed file is the authority on which devices exist, so it is what this checks
     # against rather than a list repeated here.
     seed = yaml.safe_load((CONFIG_DIRECTORY / "laboratory_model.seed.yaml").read_text(encoding="utf-8"))
@@ -113,6 +112,18 @@ def test_profiles_describe_only_devices_that_exist(profile: str) -> None:
     configured = set(load_profile(profile).get("devices") or {})
 
     assert configured <= declared, f"{profile} names undeclared devices: {sorted(configured - declared)}"
+
+
+@pytest.mark.parametrize("profile", TIMED_PROFILES)
+def test_profiles_describe_only_devices_that_have_a_server(profile: str) -> None:
+    # Tighter than the test above, and not redundant with it: a device can be declared by the
+    # seed and still have no server (the station is a plain holding place -- two slots, nothing
+    # commandable, so no SiLA2 server exists for it). Durations for such a device would be read
+    # by nobody, and the seed-based check above cannot see that.
+    configured = set(load_profile(profile).get("devices") or {})
+    served = set(DEVICE_BY_PACKAGE.values())
+
+    assert configured <= served, f"{profile} configures serverless devices: {sorted(configured - served)}"
 
 
 def test_the_default_profile_configures_no_waiting() -> None:

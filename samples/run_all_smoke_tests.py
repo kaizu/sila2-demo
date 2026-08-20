@@ -1,9 +1,9 @@
 """Run every per-server SiLA2 smoke test in one go and report which ones failed.
 
 This is the "is the stack healthy?" entry point: bring the compose stack up, run this, and
-each of the six mock instrument servers gets exercised over SiLA2. Each script is launched
-as a separate process so that one server's failure -- or a crash in its script -- cannot
-take the rest of the run down with it.
+each of the five mock servers gets exercised over SiLA2. Each script is launched as a
+separate process so that one server's failure -- or a crash in its script -- cannot take the
+rest of the run down with it.
 
 Prerequisite: the compose stack is up. Exit code 0 means every script passed.
 """
@@ -15,9 +15,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# The six mock instrument servers, one script each. Order does not matter: every script
-# wipes the laboratory model on entry and seeds only what it needs, so they neither depend
-# on nor disturb each other.
+# The five mock servers, one script each: four instruments and the transporter. Order does
+# not matter -- every script wipes the laboratory model on entry and seeds only what it
+# needs, so they neither depend on nor disturb each other.
 #
 # laboratory_model_smoke.py is intentionally NOT listed here. This runner is scoped to the
 # SiLA2 servers; the world model is a separate component with no SiLA2 surface, and its
@@ -27,7 +27,6 @@ SCRIPTS = [
     "plateloc_server_smoke.py",
     "automated_plate_seal_remover_server_smoke.py",
     "automated_thermal_cycler_server_smoke.py",
-    "station_server_smoke.py",
     "ardea_server_smoke.py",
 ]
 

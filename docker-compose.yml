@@ -3,16 +3,6 @@
 # wholesale -- YAML merge keys (`<<:`) merge mappings but never deep-merge lists -- so
 # every variable a container needs is listed on the service itself below. Splitting them
 # between anchor and service silently drops the anchor's half.
-x-sila2-server: &sila2-server
-  build:
-    context: .
-    dockerfile: servers/station_server/Dockerfile
-    args:
-      DURATIONS_FILE: ${DURATIONS_FILE:-command_durations.yaml}
-  depends_on:
-    - laboratory-model
-  command: ["python", "-m", "station_server", "--ip-address", "0.0.0.0", "--port", "50052", "--insecure", "--verbose"]
-
 x-ardea-server: &ardea-server
   build:
     context: .
@@ -135,16 +125,10 @@ services:
       - LABORATORY_MODEL_LOCATION=thermal-cycler.block
       - SILA_SERVER_NAME=ThermoFisher-Thermal-Cycler
 
-  sila2-server-5:
-    <<: *sila2-server
-    ports:
-      - "50056:50052"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - SILA_SERVER_TYPE=StationServer
-      - LABORATORY_MODEL_URL=http://laboratory-model:8001
-      - LABORATORY_MODEL_LOCATION=station.slot1
-      - SILA_SERVER_NAME=Tecan-Fluent
+  # The station -- the workflow's entry and exit point -- has no service here. Its two slots
+  # are declared by the seed and that is all a plain holding place needs: nothing about a rack
+  # is commandable, so a real bench has no server for it either. Ardea reaches
+  # `station.slot1` / `station.slot2` like any other station.
 
   # The transporter. `SILA_SERVER_TYPE` is the real machine's own server type rather than a
   # mock-specific name, because that is what a client looking for Ardea knows it by; the

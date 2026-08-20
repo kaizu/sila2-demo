@@ -36,6 +36,11 @@ devices:
 
   # The station is the workflow's entry and exit point: two slots, so a transfer between two
   # plain holding places needs no instrument to be in any particular state.
+  #
+  # It is the one device here with NO SiLA2 server. A rack has nothing commandable about it --
+  # the server it used to have offered only Reset and a Status that never changed -- so there is
+  # no interface to mock and a real bench would have none either. Declaring the spots is all it
+  # takes: Ardea reaches them like any other station, and the world model owns their occupancy.
   - id: station
     spots: [slot1, slot2]
 
