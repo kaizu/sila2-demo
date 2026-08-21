@@ -106,6 +106,11 @@ is still executing. Details, and why the realistic profile needs `--timeout` on 
 
 Component tests that need no Docker; they run in process and finish in seconds.
 
+Everything from here down runs through [`uv`](https://docs.astral.sh/uv/), the one prerequisite
+besides Docker. The project targets **Python 3.14** (`requires-python = ">=3.14"`, pinned by
+`.python-version`); uv provisions that interpreter itself, so no system Python of that version is
+needed.
+
 ```bash
 uv run pytest
 ```
@@ -160,3 +165,11 @@ From the host, reach each SiLA2 server on its published port (`50052`-`50055` an
 laboratory model on `8001`. Between containers, use the service's container name with the
 *internal* port (`50052` for SiLA2 servers, `8001` for `laboratory-model`); the published ports
 `50053`-`50055` and `50057` are for host access and are not usable verbatim from inside another container.
+
+## License
+
+MIT ([LICENSE](LICENSE)), with one carve-out stated there: the SiLA Feature definitions under
+`specs/ardea_server/` and the generated code under
+`servers/ardea_server/ardea_server/generated/` are verbatim copies from the real machine's
+servers, so they carry those projects' terms rather than this repository's.
+`specs/ardea_server/README.md` records where each file came from.

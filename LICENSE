@@ -1,0 +1,32 @@
+MIT License
+
+Copyright (c) 2026 Kazunari Kaizu
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+The grant above covers this repository's own work. It does NOT cover the SiLA
+Feature definitions under `specs/ardea_server/`, nor the generated code under
+`servers/ardea_server/ardea_server/generated/`. Those files are verbatim copies
+from the real Ardea machine's servers -- `ardea-sila2`, `bcap-sila2` and
+`kvcomplus-sila2` -- kept byte-identical on purpose, so that this mock stays a
+drop-in replacement for the machine it stands in for. They carry those projects'
+terms, not this one's. `specs/ardea_server/README.md` records where each file
+came from.
